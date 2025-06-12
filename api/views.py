@@ -117,7 +117,7 @@ class TransferAPIView(APIView):
             send_mail(
                 subject='Your Transfer Verification Code',
                 message=f'Your verification code is: {code}',
-                from_email='noreply@example.com',
+                from_email='moonlightblessed6@gmail.com',
                 recipient_list=[request.user.email],
                 fail_silently=False,
             )
@@ -146,15 +146,6 @@ class TransferHistoryAPIView(ListAPIView):
 
 
 
-
-
-# class DepositHistoryAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         deposits = Deposit.objects.filter(user=request.user).order_by('-timestamp')
-#         serializer = DepositSerializer(deposits, many=True)
-#         return Response(serializer.data)
 
 
 

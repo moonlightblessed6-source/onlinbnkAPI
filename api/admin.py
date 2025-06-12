@@ -40,18 +40,6 @@ class TransferAdmin(admin.ModelAdmin):
 
 
 
-
-
-
-# @admin.register(Deposit)
-# class DepositAdmin(admin.ModelAdmin):
-#     list_display = ('user', 'amount', 'bank_name', 'method', 'timestamp')
-#     list_filter = ('method', 'bank_name', 'timestamp')
-#     search_fields = ('user__username', 'bank_name', 'reference', 'note')
-
-
-
-
 @admin.register(Deposit)
 class DepositAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
