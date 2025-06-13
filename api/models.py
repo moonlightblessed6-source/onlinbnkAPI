@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.utils import timezone
-
+import random
 
 # then your models here
 
@@ -22,20 +22,43 @@ class CustomUser(AbstractUser):
     is_locked = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
 
+
+
+
+
+
+def generate_unique_account_number():
+    while True:
+        number = str(random.randint(10**9, 10**10 - 1))  # 10-digit number
+        if not Account.objects.filter(account_number=number).exists():
+            return number
+
+
 class Account(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=12, null=True, blank=True)
     email = models.EmailField(unique=True)
+    street = models.CharField(max_length=255)
+    apt_suite = models.CharField(max_length=10)
+    city = models.CharField(max_length=10)
+    state = models.CharField(max_length=20)
+    zip_code = models.CharField(max_length=6)
     nationality = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, blank=True, null=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     date_created = models.DateTimeField(auto_now_add=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    account_number = models.CharField(max_length=10, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.account_number:
+            self.account_number = generate_unique_account_number()
+        super().save(*args, **kwargs)  # move this outside the `if` block
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name} - {self.account_number}"
 
 
 
@@ -74,22 +97,6 @@ class Transfer(models.Model):
 
 
 
-
-# class Deposit(models.Model):
-#     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='deposits')
-#     bank_name = models.CharField(max_length=255)
-#     address = models.CharField(max_length=225, default='Unknown', null=True, blank=True)
-#     amount = models.DecimalField(max_digits=20, decimal_places=2)
-#     timestamp = models.DateTimeField(default=timezone.now)
-#     method = models.CharField(max_length=100, default='Manual')  # e.g., Card, Admin, Bank, etc.
-#     reference = models.CharField(max_length=255, blank=True, null=True)
-#     note = models.TextField(blank=True, null=True)
-
-#     def __str__(self):
-#         return f"{self.user.username} deposited {self.amount}"
-
-
-
 class Deposit(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='deposits')
     bank_name = models.CharField(max_length=255)
@@ -109,3 +116,29 @@ class Deposit(models.Model):
             account = self.user.account
             account.balance += self.amount
             account.save()
+
+
+
+
+
+
+
+
+# class Account(models.Model):
+#     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='account')
+#     first_name = models.CharField(max_length=100)
+#     last_name = models.CharField(max_length=100)
+#     phone = models.CharField(max_length=12, null=True, blank=True)
+#     email = models.EmailField(unique=True)
+#     nationality = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True)
+#     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, blank=True, null=True)
+#     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+#     date_created = models.DateTimeField(auto_now_add=True)
+#     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+#     account_number = models.CharField(max_length=10, unique=True, blank=True)
+    
+    
+
+            
+#     def __str__(self):
+#         return f"{self.first_name} {self.last_name} 

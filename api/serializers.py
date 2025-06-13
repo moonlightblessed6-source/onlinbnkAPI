@@ -42,10 +42,11 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         fields = [
             'id', 'user', 'first_name', 'last_name',
-            'phone', 'email', 'nationality', 'gender', 'balance',
+            'phone', 'email', 'nationality', 'gender', 'balance','street', 'apt_suite', 'city', 'state', 'zip_code', 'account_number',
             'date_created', 'avatar'
         ]
-        read_only_fields = ['date_created']
+        read_only_fields = ['date_created', 'account_number']
+
 
 
 # Transfer Serializer

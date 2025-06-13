@@ -28,7 +28,7 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ('user', 'first_name', 'last_name', 'phone', 'nationality', 'gender', 'balance')
+    list_display = ('user', 'first_name', 'last_name', 'phone', 'nationality', 'gender', 'street', 'apt_suite', 'city', 'state', 'zip_code', 'balance', 'account_number')
     search_fields = ('first_name', 'last_name', 'phone', 'user__username')
 
 

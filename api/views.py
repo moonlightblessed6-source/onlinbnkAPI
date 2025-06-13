@@ -17,6 +17,19 @@ from .serializers import DepositSerializer
 
 
 
+class AccountAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            account = request.user.account 
+            serializer = AccountSerializer(account)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'errors': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 class LoginAPIView(APIView):
     def post(self, request):
         username = request.data.get('username')
