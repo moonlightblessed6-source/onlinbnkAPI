@@ -64,6 +64,7 @@ class TransferSerializer(serializers.ModelSerializer):
             'swift_code',
             'purpose',
             'amount',
+            'reference',
         ]
     
     def validate_amount(self, value):
@@ -81,4 +82,28 @@ class TransferSerializer(serializers.ModelSerializer):
 class DepositSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deposit
-        fields = ['id', 'bank_name', 'address', 'amount', 'timestamp', 'method', 'reference', 'note']
+        fields = ['id', 'bank_name', 'address', 'amount', 'timestamp', 'method', 'reference', 'purpose']
+
+
+
+
+
+
+
+class TransactionHistorySerializer(serializers.Serializer):
+    transaction_type = serializers.CharField()  # 'credit' or 'debit'
+    amount = serializers.DecimalField(max_digits=20, decimal_places=2)
+    timestamp = serializers.DateTimeField()
+    description = serializers.CharField()
+    reference = serializers.CharField(required=False, allow_blank=True)  # Only for deposit
+    purpose = serializers.CharField(required=False, allow_blank=True)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Add extra details if needed
+        if hasattr(instance, 'reference'):
+            data['reference'] = instance.reference
+        if hasattr(instance, 'purpose'):
+            data['purpose'] = instance.purpose
+        return data
+

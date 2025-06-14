@@ -227,18 +227,34 @@ class TransferAPIView(APIView):
 
 
 
-class DepositCreateAPIView(APIView):
+# class DepositCreateAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         serializer = DepositSerializer(data=request.data)
+#         if serializer.is_valid():
+#             deposit = serializer.save(user=request.user)  # Create deposit
+            
+#             # Update account balance
+#             account = request.user.account
+#             account.balance += deposit.amount
+#             account.save()
+
+#             return Response(DepositSerializer(deposit).data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+class TransactionHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        serializer = DepositSerializer(data=request.data)
-        if serializer.is_valid():
-            deposit = serializer.save(user=request.user)  # Create deposit
-            
-            # Update account balance
-            account = request.user.account
-            account.balance += deposit.amount
-            account.save()
-
-            return Response(DepositSerializer(deposit).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request):
+        user = request.user
+        transactions = user.get_transaction_history()  # your combined deposits and transfers
+        
+        serializer = TransactionHistorySerializer(transactions, many=True)
+        return Response(serializer.data)
