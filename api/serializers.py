@@ -55,23 +55,22 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 class TransferSerializer(serializers.ModelSerializer):
-    sender = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    receiver = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
-    external_receiver_email = serializers.EmailField(required=False, allow_null=True)
-    external_receiver_name = serializers.CharField(required=False, allow_blank=True)
-
     class Meta:
         model = Transfer
         fields = [
-            'id', 'sender', 'receiver', 'external_receiver_email', 'external_receiver_name', 'amount', 'account', 'bank_name', 'address', 'amount',
-            'timestamp', 'status', 'note', 'is_verified'
+            'receiver_account',
+            'receiver_name',
+            'receiver_bank',
+            'swift_code',
+            'purpose',
+            'amount',
         ]
-        read_only_fields = ['timestamp', 'status', 'is_verified']
+    
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Amount must be greater than zero.")
+        return value
 
-    def validate(self, data):
-        if not data.get('receiver') and not data.get('external_receiver_email'):
-            raise serializers.ValidationError("You must provide either an internal receiver or an external receiver email.")
-        return data
 
 
 

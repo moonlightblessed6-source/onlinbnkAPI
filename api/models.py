@@ -70,10 +70,11 @@ class Transfer(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_transfers')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_transfers', null=True, blank=True)
     external_receiver_email = models.EmailField(null=True, blank=True)
-    external_receiver_name = models.CharField(max_length=255, null=True, blank=True)
+    receiver_name = models.CharField(max_length=255, null=True, blank=True)
     account = models.CharField(max_length=20)
-    address = models.CharField(max_length=225, default='Unknown', null=True, blank=True)
-    bank_name = models.CharField(max_length=255)
+    swift_code = models.CharField(max_length=20)
+    receiver_bank = models.CharField(max_length=255)
+    receiver_account = models.CharField(max_length=20)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
@@ -84,13 +85,20 @@ class Transfer(models.Model):
         ('F', 'Failed'),
     ]
     status = models.CharField(max_length=1, choices=status_choices, default='P')
-    note = models.TextField(blank=True, null=True)
+    purpose = models.TextField(null=True, blank=True)
 
     def __str__(self):
         if self.receiver:
-            return f'Transfer from {self.sender} to {self.receiver} - {self.amount}'
-        else:
-            return f'Transfer from {self.sender} to external {self.external_receiver_email or self.external_receiver_name} - {self.amount}'
+            return f"Transfer from {self.sender} to {self.receiver}"
+        return f"Transfer from {self.sender} to External ({self.receiver_account or 'N/A'})"
+
+
+
+    # def __str__(self):
+    #     if self.receiver:
+    #         return f'Transfer from {self.sender} to {self.receiver} - {self.amount}'
+    #     else:
+    #         return f'Transfer from {self.sender} to external {self.external_receiver_email or self.external_receiver_name} - {self.amount}'
 
 
 
