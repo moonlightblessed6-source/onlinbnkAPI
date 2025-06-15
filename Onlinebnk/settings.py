@@ -20,14 +20,17 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    'web-production-3ff4.up.railway.app',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://127.0.0.1",
+    'https://web-production-3ff4.up.railway.app/',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    'https://web-production-3ff4.up.railway.app/',
 ]
 
 
