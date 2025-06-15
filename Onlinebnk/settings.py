@@ -19,25 +19,23 @@ DEBUG = True
 
 
 
-ALLOWED_HOSTS = ['web-production-3ff4.up.railway.app', 'www.web-production-3ff4.up.railway.app', 'olathellc.com', 'www.olathellc.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web-production-3ff4.up.railway.app', 'www.web-production-3ff4.up.railway.app', 'olathellc.com', 'www.olathellc.com']
 
 
 CSRF_TRUSTED_ORIGINS = [
     "https://127.0.0.1",
-    'https://web-production-3ff4.up.railway.app',
-    'https://www.web-production-3ff4.up.railway.app',
-    'https://olathellc.com/',
-    'https://www.olathellc.com/',
+    "https://web-production-3ff4.up.railway.app",
+    "https://www.web-production-3ff4.up.railway.app",
+    "https://olathellc.com",
+    "https://www.olathellc.com",
 ]
-
-
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    'https://web-production-3ff4.up.railway.app',
-    'https://www.web-production-3ff4.up.railway.app',
-    'https://olathellc.com/',
-    'https://www.olathellc.com/',
+    "https://web-production-3ff4.up.railway.app",
+    "https://www.web-production-3ff4.up.railway.app",
+    "https://olathellc.com",
+    "https://www.olathellc.com",
 ]
 
 
