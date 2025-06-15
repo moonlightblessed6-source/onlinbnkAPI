@@ -3,16 +3,14 @@ from django.contrib.auth.admin import UserAdmin
 from .models import *
 
 
-
-
-
-
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
+    # Only add the new field 'is_locked', don't duplicate 'email'
     fieldsets = UserAdmin.fieldsets + (
         ('Security Settings', {'fields': ('is_locked',)}),
     )
-    list_display = UserAdmin.list_display + ('is_locked',)
+    # Show email and is_locked in the list view
+    list_display = UserAdmin.list_display + ('email', 'is_locked')
     list_filter = UserAdmin.list_filter + ('is_locked',)
     actions = ['lock_users', 'unlock_users']
 
@@ -25,6 +23,30 @@ class CustomUserAdmin(UserAdmin):
         updated = queryset.update(is_locked=False)
         self.message_user(request, f"{updated} user(s) unlocked.")
     unlock_users.short_description = "Unlock selected users"
+
+
+
+
+
+
+# @admin.register(CustomUser)
+# class CustomUserAdmin(UserAdmin):
+#     fieldsets = UserAdmin.fieldsets + (
+#         ('Security Settings', {'fields': ('is_locked',)}),
+#     )
+#     list_display = UserAdmin.list_display + ('is_locked',)
+#     list_filter = UserAdmin.list_filter + ('is_locked',)
+#     actions = ['lock_users', 'unlock_users']
+
+#     def lock_users(self, request, queryset):
+#         updated = queryset.update(is_locked=True)
+#         self.message_user(request, f"{updated} user(s) locked.")
+#     lock_users.short_description = "Lock selected users"
+
+#     def unlock_users(self, request, queryset):
+#         updated = queryset.update(is_locked=False)
+#         self.message_user(request, f"{updated} user(s) unlocked.")
+#     unlock_users.short_description = "Unlock selected users"
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):

@@ -71,6 +71,12 @@ class TransferSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Amount must be greater than zero.")
         return value
+    
+
+
+class TransferVerificationSerializer(serializers.Serializer):
+    verification_code = serializers.CharField(max_length=6)
+
 
 
 

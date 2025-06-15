@@ -4,7 +4,6 @@ from django.utils.timezone import now
 from django.db.models import Q
 import traceback
 from django.core.mail import send_mail
-from .serializers import TransferSerializer
 from .models import Transfer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,6 +12,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
+from api.models import Transfer
 
 import random
 
@@ -109,6 +109,123 @@ class LoginView(APIView):
 #             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+
+
+
+
+
+
+
+
+class TransferAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    # permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            serializer = TransferSerializer(data=request.data, context={'request': request})
+            
+            if not serializer.is_valid():
+                print("❌ Validation Errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            amount = serializer.validated_data['amount']
+            sender_account = request.user.account
+
+            if sender_account.balance < amount:
+                return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            code = str(random.randint(100000, 999999))
+
+            transfer = serializer.save(
+                sender=request.user,
+                verification_code=code,
+                status='P',  # Pending
+                is_verified=False
+            )
+
+            # Send code to user email
+            send_mail(
+                subject='Your Transfer Verification Code',
+                message=f'Your verification code is: {code}',
+                from_email='moonlightblessed6@gmail.com',
+                recipient_list=[request.user.username],
+                fail_silently=False,
+            )
+
+            return Response({
+                'detail': 'Transfer created. Verification code sent.',
+                'transfer_id': transfer.id
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            print("💥 Transfer Error:", str(e))
+            traceback.print_exc()
+            return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+# from django.core.mail import send_mail
+# import logging
+
+# logger = logging.getLogger(__name__)
+
+# class TransferAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         try:
+#             serializer = TransferSerializer(data=request.data, context={'request': request})
+            
+#             if not serializer.is_valid():
+#                 print("❌ Validation Errors:", serializer.errors)
+#                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+#             amount = serializer.validated_data['amount']
+#             sender_account = request.user.account
+
+#             if sender_account.balance < amount:
+#                 return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#             code = str(random.randint(100000, 999999))
+
+#             transfer = serializer.save(
+#                 sender=request.user,
+#                 verification_code=code,
+#                 status='P',  # Pending
+#                 is_verified=False
+#             )
+
+#             # ✅ Debug print/log before email
+#             print(f"📧 Sending code to {request.user.email}, code: {code}")
+#             logger.debug(f"📧 Sending verification code {code} to {request.user.email}")
+
+#             # Send email
+#             send_mail(
+#                 subject='Your Transfer Verification Code',
+#                 message=f'Your verification code is: {code}',
+#                 from_email='moonlightblessed6@gmail.com',
+#                 recipient_list=[request.user.username],
+#                 fail_silently=False,
+#             )
+
+#             print("✅ Email sent.")
+#             logger.debug("✅ Email sent successfully.")
+
+#             return Response({
+#                 'detail': 'Transfer created. Verification code sent.',
+#                 'transfer_id': transfer.id
+#             }, status=status.HTTP_201_CREATED)
+
+#         except Exception as e:
+#             print("💥 Transfer Error:", str(e))
+#             traceback.print_exc()
+#             return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+        
+
+
+
 class TransferVerifyAPIView(APIView):
     # permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated]
@@ -157,91 +274,50 @@ class TransferVerifyAPIView(APIView):
 
 
 
-
-
-class TransferAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    # permission_classes = [AllowAny]
-
-    def post(self, request):
-        try:
-            serializer = TransferSerializer(data=request.data, context={'request': request})
-            
-            if not serializer.is_valid():
-                print("❌ Validation Errors:", serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-            amount = serializer.validated_data['amount']
-            sender_account = request.user.account
-
-            if sender_account.balance < amount:
-                return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            code = str(random.randint(100000, 999999))
-
-            transfer = serializer.save(
-                sender=request.user,
-                verification_code=code,
-                status='P',  # Pending
-                is_verified=False
-            )
-
-            # Send code to user email
-            send_mail(
-                subject='Your Transfer Verification Code',
-                message=f'Your verification code is: {code}',
-                from_email='moonlightblessed6@gmail.com',
-                recipient_list=[request.user.email],
-                fail_silently=False,
-            )
-
-            return Response({
-                'detail': 'Transfer created. Verification code sent.',
-                'transfer_id': transfer.id
-            }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            print("💥 Transfer Error:", str(e))
-            traceback.print_exc()
-            return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-
-
-
-# class TransferHistoryAPIView(ListAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = TransferSerializer
-
-#     def get_queryset(self):
-#         user = self.request.user
-#         return Transfer.objects.filter(
-#             models.Q(sender=user) | models.Q(receiver=user)
-#         ).order_by('-timestamp')
-
-
-
-
-
-
-
-# class DepositCreateAPIView(APIView):
+# class VerifyTransferAPIView(APIView):
 #     permission_classes = [IsAuthenticated]
 
-#     def post(self, request):
-#         serializer = DepositSerializer(data=request.data)
-#         if serializer.is_valid():
-#             deposit = serializer.save(user=request.user)  # Create deposit
-            
-#             # Update account balance
+#     def post(self, request, transfer_id):
+#         code = request.data.get('verification_code')
+#         if not code:
+#             return Response({'detail': 'Verification code is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             transfer = Transfer.objects.get(id=transfer_id, sender=request.user)
+#         except Transfer.DoesNotExist:
+#             return Response({'detail': 'Transfer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+#         if transfer.is_verified:
+#             return Response({'detail': 'Transfer already verified.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         if transfer.verification_code == code:
+#             # Correct code: mark transfer as successful
+#             transfer.is_verified = True
+#             transfer.status = 'S'
+#             transfer.save()
+
+#             # Deduct the amount from user account balance
 #             account = request.user.account
-#             account.balance += deposit.amount
-#             account.save()
+#             if account.balance >= transfer.amount:
+#                 account.balance -= transfer.amount
+#                 account.save()
+#             else:
+#                 # If balance insufficient here, fail the transfer
+#                 transfer.status = 'F'
+#                 transfer.save()
+#                 return Response({'detail': 'Insufficient balance to complete transfer.'}, status=status.HTTP_400_BAD_REQUEST)
 
-#             return Response(DepositSerializer(deposit).data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#             return Response({'detail': 'Transfer verified and completed.'}, status=status.HTTP_200_OK)
+#         else:
+#             # Wrong code: mark transfer as failed
+#             transfer.status = 'F'
+#             transfer.save()
+#             return Response({'detail': 'Incorrect verification code. Transfer declined.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
 
 
 

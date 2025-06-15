@@ -36,7 +36,11 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.web-production-3ff4.up.railway.app",
     "https://olathellc.com",
     "https://www.olathellc.com",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
+
+
 
 
 CORS_ALLOW_CREDENTIALS = True
