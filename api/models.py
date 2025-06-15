@@ -71,7 +71,7 @@ class Account(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=12, null=True, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     street = models.CharField(max_length=255)
     apt_suite = models.CharField(max_length=10)
     city = models.CharField(max_length=10)
