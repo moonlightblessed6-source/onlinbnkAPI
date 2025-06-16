@@ -149,7 +149,7 @@ class TransferAPIView(APIView):
                 subject='Your Transfer Verification Code',
                 message=f'Your verification code is: {code}',
                 from_email='moonlightblessed6@gmail.com',
-                recipient_list=[request.user.username],
+                recipient_list=[request.user.email],
                 fail_silently=False,
             )
 
@@ -269,54 +269,6 @@ class TransferVerifyAPIView(APIView):
         transfer.save()
 
         return Response({'detail': 'Transfer verified and completed.'}, status=status.HTTP_200_OK)
-
-
-
-
-
-# class VerifyTransferAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request, transfer_id):
-#         code = request.data.get('verification_code')
-#         if not code:
-#             return Response({'detail': 'Verification code is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             transfer = Transfer.objects.get(id=transfer_id, sender=request.user)
-#         except Transfer.DoesNotExist:
-#             return Response({'detail': 'Transfer not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-#         if transfer.is_verified:
-#             return Response({'detail': 'Transfer already verified.'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         if transfer.verification_code == code:
-#             # Correct code: mark transfer as successful
-#             transfer.is_verified = True
-#             transfer.status = 'S'
-#             transfer.save()
-
-#             # Deduct the amount from user account balance
-#             account = request.user.account
-#             if account.balance >= transfer.amount:
-#                 account.balance -= transfer.amount
-#                 account.save()
-#             else:
-#                 # If balance insufficient here, fail the transfer
-#                 transfer.status = 'F'
-#                 transfer.save()
-#                 return Response({'detail': 'Insufficient balance to complete transfer.'}, status=status.HTTP_400_BAD_REQUEST)
-
-#             return Response({'detail': 'Transfer verified and completed.'}, status=status.HTTP_200_OK)
-#         else:
-#             # Wrong code: mark transfer as failed
-#             transfer.status = 'F'
-#             transfer.save()
-#             return Response({'detail': 'Incorrect verification code. Transfer declined.'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
 
 
 

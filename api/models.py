@@ -27,6 +27,37 @@ GENDER_CHOICES = [
 
 
 
+# class CustomUser(AbstractUser):
+#     is_locked = models.BooleanField(default=False)
+#     email = models.EmailField(unique=True)
+
+#     def get_transaction_history(self):
+#         deposits = self.deposits.all().annotate(
+#             transaction_type=models.Value('credit', output_field=models.CharField()),
+#             description=models.Value('Deposit', output_field=models.CharField()),
+#         )
+
+#         transfers = self.sent_transfers.all().annotate(
+#             transaction_type=models.Value('debit', output_field=models.CharField()),
+#             description=models.Value('Transfer', output_field=models.CharField()),
+#         )
+
+#         transactions = sorted(
+#             chain(deposits, transfers),
+#             key=attrgetter('timestamp'),
+#             reverse=True
+#         )
+
+#         return transactions
+#     def __str__(self):
+#         return f"{self.username} ({self.email})"
+
+
+
+from itertools import chain
+from operator import attrgetter
+from django.db import models
+
 class CustomUser(AbstractUser):
     is_locked = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
@@ -38,8 +69,20 @@ class CustomUser(AbstractUser):
         )
 
         transfers = self.sent_transfers.all().annotate(
-            transaction_type=models.Value('debit', output_field=models.CharField()),
-            description=models.Value('Transfer', output_field=models.CharField()),
+            transaction_type=models.Case(
+                models.When(status='F', then=models.Value('declined')),
+                models.When(status='P', then=models.Value('pending')),
+                default=models.Value('debit'),  # status = 'S'
+                output_field=models.CharField()
+            ),
+            description=models.Case(
+                models.When(status='S', then=models.Value('Debited')),
+                models.When(status='F', code_entered=True, then=models.Value('Fail Debited')),
+                models.When(status='F', code_entered=False, then=models.Value('Failed')),
+                models.When(status='P', then=models.Value('Transfer Pending')),
+                default=models.Value('Transfer'),
+                output_field=models.CharField()
+            )
         )
 
         transactions = sorted(
@@ -49,8 +92,10 @@ class CustomUser(AbstractUser):
         )
 
         return transactions
+
     def __str__(self):
         return f"{self.username} ({self.email})"
+
 
 
 
@@ -108,6 +153,7 @@ class Transfer(models.Model):
     receiver_bank = models.CharField(max_length=255)
     receiver_account = models.CharField(max_length=20)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
+    code_entered = models.BooleanField(default=False) 
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     timestamp = models.DateTimeField(default=timezone.now)
