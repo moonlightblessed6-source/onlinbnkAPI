@@ -27,36 +27,8 @@ GENDER_CHOICES = [
 
 
 
-# class CustomUser(AbstractUser):
-#     is_locked = models.BooleanField(default=False)
-#     email = models.EmailField(unique=True)
-
-#     def get_transaction_history(self):
-#         deposits = self.deposits.all().annotate(
-#             transaction_type=models.Value('credit', output_field=models.CharField()),
-#             description=models.Value('Deposit', output_field=models.CharField()),
-#         )
-
-#         transfers = self.sent_transfers.all().annotate(
-#             transaction_type=models.Value('debit', output_field=models.CharField()),
-#             description=models.Value('Transfer', output_field=models.CharField()),
-#         )
-
-#         transactions = sorted(
-#             chain(deposits, transfers),
-#             key=attrgetter('timestamp'),
-#             reverse=True
-#         )
-
-#         return transactions
-#     def __str__(self):
-#         return f"{self.username} ({self.email})"
 
 
-
-from itertools import chain
-from operator import attrgetter
-from django.db import models
 
 class CustomUser(AbstractUser):
     is_locked = models.BooleanField(default=False)
