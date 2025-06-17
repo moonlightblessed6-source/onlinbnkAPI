@@ -84,7 +84,7 @@ class LoginView(APIView):
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if getattr(user_obj, 'is_locked', False):
-            return Response({"error": "Dear Customer, we have discovered suspicious activities on your account. An unauthorized IP address attempted to carry out a transaction on your account and credit card. Consequently, your account has been flagged by our risk assessment department. Kindly visit our nearest branch to confirm your identity before it can be reactivated. For more information, kindly contact our online customer care representative at info@firstharvestcu.com."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Dear Customer, we have discovered suspicious activities on your account. An unauthorized IP address attempted to carry out a transaction on your account and credit card. Consequently, your account has been flagged by our risk assessment department. Kindly visit our nearest branch to confirm your identity before it can be reactivated. For more information, kindly contact our online customer care representative at info@fcujetscreem.org."}, status=status.HTTP_403_FORBIDDEN)
 
         user = authenticate(username=user_obj.username, password=password)
         if user:
