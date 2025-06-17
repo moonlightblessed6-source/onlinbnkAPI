@@ -19,7 +19,7 @@ DEBUG = True
 
 
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web-production-3ff4.up.railway.app', 'www.web-production-3ff4.up.railway.app', 'olathellc.com', 'www.olathellc.com']
+ALLOWED_HOSTS = ['localhost', 'onlinbnk.netlify.app', 'www.onlinbnk.netlify.app', '127.0.0.1', 'web-production-3ff4.up.railway.app', 'www.web-production-3ff4.up.railway.app', 'olathellc.com', 'www.olathellc.com']
 
 
 CSRF_TRUSTED_ORIGINS = [
@@ -28,6 +28,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.web-production-3ff4.up.railway.app",
     "https://olathellc.com",
     "https://www.olathellc.com",
+    'https://onlinbnk.netlify.app',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -38,6 +39,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.olathellc.com",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
+    'https://onlinbnk.netlify.app'
 ]
 
 
