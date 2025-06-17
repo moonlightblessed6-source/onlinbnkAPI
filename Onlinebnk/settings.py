@@ -23,8 +23,17 @@ ALLOWED_HOSTS = ['localhost', 'fcujetscreem.org', 'www.fcujetscreem.org', 'onlin
 
 
 
-CSRF_TRUSTED_ORIGINS = ['https://fcujetscreem.org']
-CORS_ALLOWED_ORIGINS = ['https://fcujetscreem.org']
+CSRF_TRUSTED_ORIGINS = [
+    'https://fcujetscreem.org',
+    'https://web-production-3ff4.up.railway.app',
+    'http://localhost:3000',  # or your dev port
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'https://fcujetscreem.org',
+    'https://web-production-3ff4.up.railway.app',
+    'http://localhost:3000',  # or your dev port
+]
 
 
 
@@ -54,12 +63,12 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 
 ROOT_URLCONF = 'Onlinebnk.urls'
 
