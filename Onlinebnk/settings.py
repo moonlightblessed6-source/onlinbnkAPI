@@ -22,27 +22,10 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost', 'fcujetscreem.org', 'www.fcujetscreem.org', 'onlinbnk.netlify.app', 'www.onlinbnk.netlify.app', '127.0.0.1', 'web-production-3ff4.up.railway.app', 'www.web-production-3ff4.up.railway.app', 'olathellc.com', 'www.olathellc.com']
 
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://127.0.0.1",
-    "https://web-production-3ff4.up.railway.app",
-    "https://www.web-production-3ff4.up.railway.app",
-    "https://olathellc.com",
-    "https://www.olathellc.com",
-    'https://onlinbnk.netlify.app',
-    'https://fcujetscreem.org',
-]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://web-production-3ff4.up.railway.app",
-    "https://www.web-production-3ff4.up.railway.app",
-    "https://olathellc.com",
-    "https://www.olathellc.com",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    'https://onlinbnk.netlify.app',
-    'https://fcujetscreem.org',
-]
+CSRF_TRUSTED_ORIGINS = ['https://fcujetscreem.org']
+CORS_ALLOWED_ORIGINS = ['https://fcujetscreem.org']
+
 
 
 
