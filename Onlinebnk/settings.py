@@ -25,11 +25,15 @@ ALLOWED_HOSTS = ['localhost', 'fcujetscreem.org', 'www.fcujetscreem.org', 'onlin
 
 CSRF_TRUSTED_ORIGINS = [
     'https://fcujetscreem.org',
+    'https://www.fcujetscreem.org',
+    'http://fcujetscreem.org',
     'https://web-production-3ff4.up.railway.app',
     'http://localhost:3000',  # or your dev port
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    'https://www.fcujetscreem.org',
+    'http://fcujetscreem.org',
     'https://fcujetscreem.org',
     'https://web-production-3ff4.up.railway.app',
     'http://localhost:3000',  # or your dev port
