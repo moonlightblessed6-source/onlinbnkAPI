@@ -40,7 +40,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.olathellc.com",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
-    'https://onlinbnk.netlify.app'
+    'https://onlinbnk.netlify.app',
     'https://fcujetscreem.org',
 ]
 
