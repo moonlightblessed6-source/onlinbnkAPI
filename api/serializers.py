@@ -65,6 +65,7 @@ class TransferSerializer(serializers.ModelSerializer):
             'purpose',
             'amount',
             'recipient_address',
+            'iban',
             'reference',
         ]
     
