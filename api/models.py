@@ -5,6 +5,7 @@ from django.utils import timezone
 import random
 from itertools import chain
 from operator import attrgetter
+from django_countries.fields import CountryField
 
 
 import uuid
@@ -12,21 +13,12 @@ import uuid
 # then your models here
 
 
-COUNTRY_CHOICES = [
-    ('US', 'United States'),
-    
-]
 
 GENDER_CHOICES = [
     ('M', 'Male'),
     ('F', 'Female'),
     ('O', 'Other'),
 ]
-
-
-
-
-
 
 
 
@@ -94,7 +86,8 @@ class Account(models.Model):
     city = models.CharField(max_length=10)
     state = models.CharField(max_length=20)
     zip_code = models.CharField(max_length=6)
-    nationality = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True)
+    nationality = CountryField(blank=True, null=True)
+    # nationality = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES, blank=True, null=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -121,13 +114,17 @@ class Transfer(models.Model):
     external_receiver_email = models.EmailField(null=True, blank=True)
     receiver_name = models.CharField(max_length=255, null=True, blank=True)
     account = models.CharField(max_length=20)
-    swift_code = models.CharField(max_length=20)
+    swift_code = models.CharField(max_length=20, blank=True, null=True)
     receiver_bank = models.CharField(max_length=255)
     receiver_account = models.CharField(max_length=20)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     recipient_address = models.CharField(max_length=255, null=True, blank=True)
     iban = models.CharField(max_length=34, null=True, blank=True)
     code_entered = models.BooleanField(default=False) 
+    state = models.CharField(max_length=20, blank=True, null=True)
+    nationality = CountryField(blank=True, null=True)
+    zip_code = models.CharField(max_length=6, blank=True, null=True)
+    city = models.CharField(max_length=20, blank=True, null=True)
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     timestamp = models.DateTimeField(default=timezone.now)
