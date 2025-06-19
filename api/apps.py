@@ -9,3 +9,4 @@ class ApiConfig(AppConfig):
     def ready(self):
         # import signals here, to avoid import before app registry is ready
         from . import signals
+

@@ -125,6 +125,7 @@ class Transfer(models.Model):
     receiver_bank = models.CharField(max_length=255)
     receiver_account = models.CharField(max_length=20)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
+    recipient_address = models.CharField(max_length=255, null=True, blank=True)
     code_entered = models.BooleanField(default=False) 
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     is_verified = models.BooleanField(default=False)

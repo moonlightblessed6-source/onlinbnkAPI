@@ -56,7 +56,7 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(Transfer)
 class TransferAdmin(admin.ModelAdmin):
-    list_display = ('sender', 'receiver', 'amount', 'status', 'timestamp')
+    list_display = ('sender', 'receiver', 'amount', 'recipient_address', 'status', 'timestamp')
     list_filter = ('status', 'timestamp')
     search_fields = ('sender__username', 'receiver__username')
 

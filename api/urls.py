@@ -4,6 +4,7 @@ from .views import *
 
 
 
+
 urlpatterns = [
     path('account/dashboard', AccountAPIView.as_view(), name = 'dashboard'),
     path('login/', LoginView.as_view(), name ='account'),
@@ -13,4 +14,5 @@ urlpatterns = [
     # path('transfers/history/', TransferHistoryAPIView.as_view(), name='transfer-history'),
     path('transactions/history/', TransactionHistoryView.as_view(), name='transaction-history'),
     # path('deposithistory/', DepositCreateAPIView.as_view(), name='deposits')
+
 ]

@@ -29,6 +29,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://fcujetscreem.org',
     'https://web-production-3ff4.up.railway.app',
     'http://localhost:3000',  # or your dev port
+    'http://localhost:5173',  
+    'http://127.0.0.1:5173',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -36,7 +38,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://fcujetscreem.org',
     'https://fcujetscreem.org',
     'https://web-production-3ff4.up.railway.app',
-    'http://localhost:3000',  # or your dev port
+    'http://localhost:3000',
+    'http://localhost:5173',  
+    'http://127.0.0.1:5173',
+    "http://localhost:5174",
 ]
 
 
@@ -157,20 +162,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-# settings.py
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 465
-# EMAIL_USE_SSL = True
-# EMAIL_HOST_USER = 'moonlightblessed6@gmail.com'
-# EMAIL_HOST_PASSWORD = 'tcdmfcufcikvewtl'  
-
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_USE_SSL = True
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'moonlightblessed6@gmail.com'
 EMAIL_HOST_PASSWORD = 'tcdmfcufcikvewtl'
 

@@ -64,6 +64,7 @@ class TransferSerializer(serializers.ModelSerializer):
             'swift_code',
             'purpose',
             'amount',
+            'recipient_address',
             'reference',
         ]
     
@@ -103,6 +104,7 @@ class TransactionHistorySerializer(serializers.Serializer):
     description = serializers.CharField()
     reference = serializers.CharField(required=False, allow_blank=True)  # Only for deposit
     purpose = serializers.CharField(required=False, allow_blank=True)
+    recipient_address = serializers.CharField(required=False, allow_blank=True)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -111,5 +113,7 @@ class TransactionHistorySerializer(serializers.Serializer):
             data['reference'] = instance.reference
         if hasattr(instance, 'purpose'):
             data['purpose'] = instance.purpose
+        if hasattr(instance, 'recipient_address'):
+            data['recipient_address'] = instance.recipient_address
         return data
 

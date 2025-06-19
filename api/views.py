@@ -8,7 +8,6 @@ from .models import Transfer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-# from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
@@ -17,9 +16,7 @@ from api.models import Transfer
 import random
 
 from .models import *
-from .models import Deposit
 from .serializers import *
-from .serializers import DepositSerializer
 
 
 
@@ -98,22 +95,6 @@ class LoginView(APIView):
         return Response({"error": "Invalid username/email or password."}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-# class LogoutView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         try:
-#             logout(request)
-#             return Response({"message": "User logged out successfully!"}, status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-
-
-
 
 
 
@@ -164,29 +145,37 @@ class TransferAPIView(APIView):
             return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-# from django.core.mail import send_mail
-# import logging
 
-# logger = logging.getLogger(__name__)
 
-# class TransferAPIView(APIView):
 #     permission_classes = [IsAuthenticated]
 
 #     def post(self, request):
 #         try:
+#             print("Received transfer request data:", request.data)
+
 #             serializer = TransferSerializer(data=request.data, context={'request': request})
-            
+#             print("Serializer created")
+
 #             if not serializer.is_valid():
-#                 print("❌ Validation Errors:", serializer.errors)
+#                 print("Validation errors:", serializer.errors)
 #                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
+#             try:
+#                 sender_account = request.user.account
+#                 print("Sender account found:", sender_account)
+#             except Account.DoesNotExist:
+#                 print("Sender account not found")
+#                 return Response({'detail': 'Sender account not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
 #             amount = serializer.validated_data['amount']
-#             sender_account = request.user.account
+#             print("Amount to transfer:", amount)
 
 #             if sender_account.balance < amount:
+#                 print("Insufficient balance")
 #                 return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
 
 #             code = str(random.randint(100000, 999999))
+#             print("Generated verification code:", code)
 
 #             transfer = serializer.save(
 #                 sender=request.user,
@@ -194,22 +183,17 @@ class TransferAPIView(APIView):
 #                 status='P',  # Pending
 #                 is_verified=False
 #             )
+#             print(f"Transfer created with ID {transfer.id}")
 
-#             # ✅ Debug print/log before email
-#             print(f"📧 Sending code to {request.user.email}, code: {code}")
-#             logger.debug(f"📧 Sending verification code {code} to {request.user.email}")
-
-#             # Send email
+#             # Send email with verification code
 #             send_mail(
 #                 subject='Your Transfer Verification Code',
 #                 message=f'Your verification code is: {code}',
 #                 from_email='moonlightblessed6@gmail.com',
-#                 recipient_list=[request.user.username],
+#                 recipient_list=[request.user.email],
 #                 fail_silently=False,
 #             )
-
-#             print("✅ Email sent.")
-#             logger.debug("✅ Email sent successfully.")
+#             print("Verification code email sent")
 
 #             return Response({
 #                 'detail': 'Transfer created. Verification code sent.',
@@ -221,8 +205,6 @@ class TransferAPIView(APIView):
 #             traceback.print_exc()
 #             return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-        
 
 
 
