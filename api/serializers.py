@@ -11,7 +11,7 @@ class AdminUserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'is_locked', 'is_staff', 'is_superuser']
+        fields = ['username', 'email', 'password', 'is_locked', 'is_transfer_locked', 'is_staff', 'is_superuser']
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -65,7 +65,7 @@ class TransferSerializer(serializers.ModelSerializer):
             'purpose',
             'amount',
             'recipient_address',
-            'iban',
+            # 'iban',
             'nationality',
             'city',
             'zip_code',

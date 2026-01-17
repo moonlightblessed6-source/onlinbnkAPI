@@ -31,6 +31,7 @@ GENDER_CHOICES = [
 
 class CustomUser(AbstractUser):
     is_locked = models.BooleanField(default=False)
+    is_transfer_locked = models.BooleanField(default=False) 
     email = models.EmailField(unique=True)
 
     def get_transaction_history(self):
@@ -125,7 +126,7 @@ class Transfer(models.Model):
     receiver_account = models.CharField(max_length=20)
     amount = models.DecimalField(max_digits=20, decimal_places=2)
     recipient_address = models.CharField(max_length=255, null=True, blank=True)
-    iban = models.CharField(max_length=34, null=True, blank=True)
+    # iban = models.CharField(max_length=34, null=True, blank=True)
     code_entered = models.BooleanField(default=False) 
     state = models.CharField(max_length=20, blank=True, null=True)
     nationality = models.CharField(max_length=100, choices=COUNTRY_CHOICES, blank=True, null=True)
