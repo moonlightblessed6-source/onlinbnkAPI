@@ -98,52 +98,7 @@ class LoginView(APIView):
 
 
 
-# class TransferAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     # permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         try:
-#             serializer = TransferSerializer(data=request.data, context={'request': request})
-            
-#             if not serializer.is_valid():
-#                 print("❌ Validation Errors:", serializer.errors)
-#                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-#             amount = serializer.validated_data['amount']
-#             sender_account = request.user.account
-
-#             if sender_account.balance < amount:
-#                 return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
-
-#             code = str(random.randint(100000, 999999))
-
-#             transfer = serializer.save(
-#                 sender=request.user,
-#                 verification_code=code,
-#                 status='P',  # Pending
-#                 is_verified=False
-#             )
-
-#             # Send code to user email
-#             send_mail(
-#                 subject='Your Transfer Verification Code',
-#                 message=f'Your verification code is: {code}',
-#                 from_email='moonlightblessed6@gmail.com',
-#                 recipient_list=[request.user.email],
-#                 fail_silently=False,
-#             )
-
-#             return Response({
-#                 'detail': 'Transfer created. Verification code sent.',
-#                 'transfer_id': transfer.id
-#             }, status=status.HTTP_201_CREATED)
-
-#         except Exception as e:
-#             print("💥 Transfer Error:", str(e))
-#             traceback.print_exc()
-#             return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+     
 
 class TransferAPIView(APIView):
     permission_classes = [IsAuthenticated]
