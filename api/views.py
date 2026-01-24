@@ -245,3 +245,16 @@ class TransactionHistoryView(APIView):
         
         serializer = TransactionHistorySerializer(transactions, many=True)
         return Response(serializer.data)
+
+
+
+
+
+# api/views.py
+from django.http import JsonResponse
+
+def keep_alive(request):
+    """
+    Simple endpoint to respond to pings from React
+    """
+    return JsonResponse({"status": "alive"}, status=200)
