@@ -76,6 +76,8 @@ class CustomUser(AbstractUser):
 
 
 
+
+
 def generate_unique_account_number():
     while True:
         number = str(random.randint(10**9, 10**10 - 1))  # 10-digit number
@@ -137,10 +139,11 @@ class Transfer(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     reference = models.CharField(max_length=100, blank=True, null=True, unique=True)
     status_choices = [
-        ('P', 'Pending'),
-        ('S', 'Successful'),
-        ('F', 'Failed'),
-    ]
+    ('P', 'Pending'),
+    ('S', 'Successful'),
+    ('F', 'Failed'),
+]
+
     status = models.CharField(max_length=1, choices=status_choices, default='P')
     purpose = models.TextField(null=True, blank=True)
 

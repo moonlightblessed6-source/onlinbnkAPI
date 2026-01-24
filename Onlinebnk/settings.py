@@ -1,6 +1,6 @@
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
+from datetime import timedelta
 from pathlib import Path
 AUTH_USER_MODEL = 'api.CustomUser'
 
@@ -19,18 +19,22 @@ DEBUG = True
 
 
 
-ALLOWED_HOSTS = ['localhost', 'fcujetscreem.org', 'www.fcujetscreem.org', 'onlinbnk.netlify.app', 'www.onlinbnk.netlify.app', '127.0.0.1', 'web-production-3ff4.up.railway.app', 'www.web-production-3ff4.up.railway.app', 'olathellc.com', 'www.olathellc.com']
-
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+]
 
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://.jetstrem.info',
-    'https://www.jetstrem.info',
-    'http://fcujetscreem.org',
+    'http://localhost:5173'
 ]
 
 
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 
 
@@ -45,7 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     "corsheaders",
     'rest_framework',
     'api.apps.ApiConfig',
@@ -150,13 +154,17 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'moonlightblessed6@gmail.com'
-EMAIL_HOST_PASSWORD = 'tcdmfcufcikvewtl'
+EMAIL_HOST_USER = 'adilagubban@gmail.com'
+EMAIL_HOST_PASSWORD = 'ihlvvgejqgskbfpn'
+
+# Debug logging for email backend
+
 
 # Debug logging for email backend
 
@@ -164,19 +172,22 @@ EMAIL_HOST_PASSWORD = 'tcdmfcufcikvewtl'
 
 
 
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
-SESSION_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SECURE = True
 

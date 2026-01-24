@@ -1,66 +1,105 @@
+import random
+
 from django.contrib.auth import authenticate
-from django.db import transaction
-from django.utils.timezone import now
-from django.db.models import Q
-import traceback
 from django.core.mail import send_mail
-from .models import Transfer
+from django.db import transaction
+from django.db.models import Q
+from django.utils.timezone import now
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes
-from api.models import Transfer
 
-import random
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import *
 from .serializers import *
 
 
 
+# class AccountAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         try:
+#             user = request.user
+#             account = Account.objects.get(user=user)
+
+#             account_data = {
+#                 "username": user.username,
+#                 "first_name": account.first_name,  
+#                 "last_name": account.last_name,   
+#                 "email": account.email,
+#                 "phone": account.phone,
+#                 "nationality": account.nationality,
+#                 "gender": account.gender,
+#                 "street": account.street,
+#                 "apt_suite": account.apt_suite,
+#                 "city": account.city,
+#                 "state": account.state,
+#                 "zip_code": account.zip_code,
+#                 "balance": account.balance,
+#                 "account_number": account.account_number,
+#                 "avatar_url": account.avatar.url if account.avatar else None,
+#                 "date_created": account.date_created.strftime('%Y-%m-%d %H:%M:%S'),
+#             }
+
+#             current_time = now().isoformat()
+
+#             return Response({
+#                 "message": "Dashboard loaded successfully",
+#                 "account": account_data,
+#                 "current_time": current_time,
+#             }, status=status.HTTP_200_OK)
+
+#         except Account.DoesNotExist:
+#             return Response({"error": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+from django.db import transaction
+
 class AccountAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            user = request.user
-            account = Account.objects.get(user=user)
+        user = request.user
 
-            account_data = {
-                "username": user.username,
-                "first_name": account.first_name,  
-                "last_name": account.last_name,   
-                "email": account.email,
-                "phone": account.phone,
-                "nationality": account.nationality,
-                "gender": account.gender,
-                "street": account.street,
-                "apt_suite": account.apt_suite,
-                "city": account.city,
-                "state": account.state,
-                "zip_code": account.zip_code,
-                "balance": account.balance,
-                "account_number": account.account_number,
-                "avatar_url": account.avatar.url if account.avatar else None,
-                "date_created": account.date_created.strftime('%Y-%m-%d %H:%M:%S'),
+        account, created = Account.objects.get_or_create(
+            user=user,
+            defaults={
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
             }
+        )
 
-            current_time = now().isoformat()
+        account_data = {
+            "username": user.username,
+            "first_name": account.first_name,
+            "last_name": account.last_name,
+            "email": account.email,
+            "phone": account.phone,
+            "nationality": account.nationality,
+            "gender": account.gender,
+            "street": account.street,
+            "apt_suite": account.apt_suite,
+            "city": account.city,
+            "state": account.state,
+            "zip_code": account.zip_code,
+            "balance": account.balance,
+            "account_number": account.account_number,
+            "avatar_url": account.avatar.url if account.avatar else None,
+            "date_created": account.date_created.strftime('%Y-%m-%d %H:%M:%S'),
+        }
 
-            return Response({
-                "message": "Dashboard loaded successfully",
-                "account": account_data,
-                "current_time": current_time,
-            }, status=status.HTTP_200_OK)
-
-        except Account.DoesNotExist:
-            return Response({"error": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+        return Response({
+            "message": "Dashboard loaded successfully",
+            "account": account_data,
+            "current_time": now().isoformat(),
+        }, status=200)
 
 
 
@@ -69,31 +108,32 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        login_input = request.data.get('username', '').strip()
-        password = request.data.get('password', '')
+        # Make sure request.data is used correctly
+        username_or_email = request.data.get("username")
+        password = request.data.get("password")
 
-        if not login_input or not password:
-            return Response({"error": "Please provide username/email and password."},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if not username_or_email or not password:
+            return Response({"error": "Username/email and password required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user_obj = User.objects.filter(Q(username=login_input) | Q(email=login_input)).first()
+        # Find user by username or email
+        user_obj = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
         if not user_obj:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        if getattr(user_obj, 'is_locked', False):
-            return Response({"error": "Dear Customer, we have discovered suspicious activities on your account. An unauthorized IP address attempted to carry out a transaction on your account and credit card. Consequently, your account has been flagged by our risk assessment department. Kindly visit our nearest branch to confirm your identity before it can be reactivated. For more information, kindly contact our online customer care representative at info@fcujetscreem.org."}, status=status.HTTP_403_FORBIDDEN)
-
+        # Authenticate user
         user = authenticate(username=user_obj.username, password=password)
-        if user:
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({
-                "message": "User logged in successfully!",
-                "token": token.key,
-                "user_id": user.id,
-                "username": user.username,
-            })
-        return Response({"error": "Invalid username/email or password."}, status=status.HTTP_401_UNAUTHORIZED)
+        if not user:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Generate JWT
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user_id": user.id,
+            "username": user.username
+        }, status=status.HTTP_200_OK)
 
 
 
@@ -130,8 +170,12 @@ class TransferAPIView(APIView):
                 sender=user,
                 verification_code=code,
                 status='P',
-                is_verified=False
-            )
+                is_verified=False,
+                receiver_name=serializer.validated_data.get('receiver_name'),
+                receiver_account=serializer.validated_data.get('receiver_account'),
+                receiver_bank=serializer.validated_data.get('receiver_bank'),
+                )
+
 
             send_mail(
                 subject='Your Transfer Verification Code',
@@ -153,51 +197,40 @@ class TransferAPIView(APIView):
 
 
 class TransferVerifyAPIView(APIView):
-    # permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated]
 
     @transaction.atomic
     def post(self, request, transfer_id):
         try:
-            transfer = Transfer.objects.get(pk=transfer_id)
+            transfer = Transfer.objects.select_for_update().get(pk=transfer_id)
         except Transfer.DoesNotExist:
-            return Response({'detail': 'Transfer not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Transfer not found.'}, status=404)
 
         if transfer.sender != request.user:
-            return Response({'detail': 'Unauthorized.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Unauthorized.'}, status=403)
 
         if transfer.is_verified:
-            return Response({'detail': 'Transfer already verified.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Transfer already verified.'}, status=400)
 
-        code = request.data.get('code')
+        code = request.data.get('verification_code')
         if code != transfer.verification_code:
-            return Response({'detail': 'Invalid verification code.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Invalid verification code.'}, status=400)
 
-        sender_account = request.user.account
-
-        if sender_account.balance < transfer.amount:
+        if request.user.account.balance < transfer.amount:
             transfer.status = 'F'
-            transfer.save()
-            return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Deduct amount from sender
-        sender_account.balance -= transfer.amount
-        sender_account.save()
-
-        # If internal receiver, credit amount
-        if transfer.receiver:
-            receiver_account = transfer.receiver.account
-            receiver_account.balance += transfer.amount
-            receiver_account.save()
+            transfer.code_entered = True
+            transfer.save(update_fields=['status', 'code_entered'])
+            return Response({'detail': 'Insufficient balance.'}, status=400)
 
         transfer.is_verified = True
-        transfer.status = 'S'
-        transfer.save()
+        transfer.code_entered = True
+        transfer.status = 'P'
+        transfer.save(update_fields=['is_verified', 'status', 'code_entered'])
 
-        return Response({'detail': 'Transfer verified and completed.'}, status=status.HTTP_200_OK)
-
-
-
+        return Response(
+            {'detail': 'Transfer verified. Awaiting admin approval.'},
+            status=200
+        )
 
 
 

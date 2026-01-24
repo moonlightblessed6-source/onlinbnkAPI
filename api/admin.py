@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser, Account, Transfer, Deposit
+from django.db import transaction
+
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
@@ -43,11 +45,75 @@ class AccountAdmin(admin.ModelAdmin):
     search_fields = ('first_name', 'last_name', 'phone', 'user__username')
 
 
+# @admin.register(Transfer)
+# class TransferAdmin(admin.ModelAdmin):
+#     list_display = ('sender', 'receiver', 'amount', 'recipient_address', 'status', 'timestamp')
+#     list_filter = ('status', 'timestamp')
+#     search_fields = ('sender__username', 'receiver__username')
+
+
+
 @admin.register(Transfer)
 class TransferAdmin(admin.ModelAdmin):
-    list_display = ('sender', 'receiver', 'amount', 'recipient_address', 'status', 'timestamp')
-    list_filter = ('status', 'timestamp')
+    list_display = (
+        'sender',
+        'receiver',
+        'amount',
+        'status',
+        'is_verified',
+        'timestamp',
+    )
+    list_filter = ('status', 'is_verified', 'timestamp')
     search_fields = ('sender__username', 'receiver__username')
+
+    actions = ['approve_transfers', 'decline_transfers']
+
+    @transaction.atomic
+    def approve_transfers(self, request, queryset):
+        approved = 0
+
+        for transfer in queryset.select_for_update():
+            # Must be verified and pending
+            if transfer.status != 'P' or not transfer.is_verified:
+                continue
+
+            sender_account = transfer.sender.account
+
+            # Final balance check
+            if sender_account.balance < transfer.amount:
+                transfer.status = 'F'
+                transfer.save(update_fields=['status'])
+                continue
+
+            # Debit sender
+            sender_account.balance -= transfer.amount
+            sender_account.save()
+
+            # Credit receiver (internal only)
+            if transfer.receiver:
+                receiver_account = transfer.receiver.account
+                receiver_account.balance += transfer.amount
+                receiver_account.save()
+
+            transfer.status = 'S'
+            transfer.save(update_fields=['status'])
+            approved += 1
+
+        self.message_user(
+            request,
+            f"{approved} transfer(s) approved successfully."
+        )
+
+    approve_transfers.short_description = "✅ Approve selected transfers"
+
+    def decline_transfers(self, request, queryset):
+        declined = queryset.filter(status='P').update(status='F')
+        self.message_user(
+            request,
+            f"{declined} transfer(s) declined."
+        )
+
+    decline_transfers.short_description = "❌ Decline selected transfers"
 
 
 @admin.register(Deposit)
@@ -59,3 +125,10 @@ class DepositAdmin(admin.ModelAdmin):
             account = obj.user.account
             account.balance += obj.amount
             account.save()
+
+
+
+
+
+
+
