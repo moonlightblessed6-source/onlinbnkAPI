@@ -27,10 +27,11 @@ ALLOWED_HOSTS = [
 
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173'
+    'http://localhost:5173',
     "https://onlinbnkapi.onrender.com",
     "https://onlinprojectbnk.vercel.app",
 ]
+
 
 
 
