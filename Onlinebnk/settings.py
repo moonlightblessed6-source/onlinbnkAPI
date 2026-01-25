@@ -23,7 +23,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     "onlinbnkapi.onrender.com",
-    "www.onlinbnkapi.onrender.com",
+    "onlinprojectbnk.vercel.app",
 ]
 
 
