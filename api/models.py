@@ -25,36 +25,35 @@ GENDER_CHOICES = [
 
 
 
-
-
-
-
-
-
 class CustomUser(AbstractUser):
     is_locked = models.BooleanField(default=False)
-    is_transfer_locked = models.BooleanField(default=False) 
+    is_transfer_locked = models.BooleanField(default=False)
+
     email = models.EmailField(unique=True)
+
     verification_code = models.CharField(max_length=6, blank=True, null=True)
-    verification_code_expired = models.BooleanField(default=False)
-    verification_code_sent_at = models.DateTimeField(blank=True, null=True)  # optional timestamp
+    verification_code_sent_at = models.DateTimeField(blank=True, null=True)
 
     # -------------------------
     def is_code_expired(self):
         """
-        Returns True if the verification code is expired.
-        Uses verification_code_expired flag or 5-min timeout.
+        Returns True if verification code is expired or missing.
+        Codes expire after 5 minutes.
         """
-        # If the explicit expired flag is True
-        if self.verification_code_expired:
+        if not self.verification_code_sent_at:
             return True
 
-        # If using timestamp to expire after 5 minutes
-        if self.verification_code_sent_at:
-            return timezone.now() > self.verification_code_sent_at + timedelta(minutes=5)
+        return timezone.now() > self.verification_code_sent_at + timedelta(minutes=5)
 
-        # If no code was ever sent, treat as expired
-        return True
+    # -------------------------
+    def clear_verification_code(self):
+        """Call this after successful verification"""
+        self.verification_code = None
+        self.verification_code_sent_at = None
+        self.save(update_fields=[
+            "verification_code",
+            "verification_code_sent_at"
+        ])
 
     # -------------------------
     def get_transaction_history(self):
@@ -67,7 +66,7 @@ class CustomUser(AbstractUser):
             transaction_type=models.Case(
                 models.When(status='F', then=models.Value('declined')),
                 models.When(status='P', then=models.Value('pending')),
-                default=models.Value('debit'),  # status = 'S'
+                default=models.Value('debit'),
                 output_field=models.CharField()
             ),
             description=models.Case(
@@ -80,18 +79,15 @@ class CustomUser(AbstractUser):
             )
         )
 
-        transactions = sorted(
+        return sorted(
             chain(deposits, transfers),
             key=attrgetter('timestamp'),
             reverse=True
         )
 
-        return transactions
-
     # -------------------------
     def __str__(self):
         return f"{self.username} ({self.email})"
-
 
 
 
