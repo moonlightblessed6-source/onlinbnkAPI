@@ -24,66 +24,6 @@ from .serializers import *
 
 
 
-# class LoginView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         username_or_email = request.data.get("username")
-#         verification_code = request.data.get("verification_code")
-
-#         if not username_or_email:
-#             return Response({"error": "Username or email required"}, status=400)
-
-#         user = User.objects.filter(
-#             Q(username=username_or_email) | Q(email=username_or_email)
-#         ).first()
-
-#         if not user:
-#             return Response({"error": "User not found"}, status=404)
-
-#         # STEP 1: Send code
-#         if not verification_code:
-#             code = get_random_string(6, allowed_chars="0123456789")
-#             user.verification_code = code
-#             user.verification_code_sent_at = timezone.now()
-#             user.verification_code_expired = False
-#             user.save()
-
-#             send_mail(
-#                 "Your Login Verification Code",
-#                 f"Your verification code is: {code}",
-#                 settings.DEFAULT_FROM_EMAIL,
-#                 [user.email],
-#                 fail_silently=False,
-#             )
-
-#             return Response({
-#                 "step": "verify",
-#                 "message": "Verification code sent"
-#             }, status=200)
-
-#         # STEP 2: Verify code
-#         if user.verification_code != verification_code:
-#             return Response({"error": "Invalid verification code"}, status=400)
-
-#         if not user.verification_code_sent_at or (
-#             timezone.now() > user.verification_code_sent_at + timedelta(minutes=5)
-#         ):
-#             return Response({"error": "Verification code expired"}, status=400)
-
-#         # STEP 3: Login success
-#         refresh = RefreshToken.for_user(user)
-
-#         user.verification_code = None
-#         user.verification_code_sent_at = None
-#         user.verification_code_expired = False
-#         user.save()
-
-#         return Response({
-#             "step": "done",
-#             "access": str(refresh.access_token),
-#             "refresh": str(refresh),
-#         }, status=200)
 
 
 class LoginView(APIView):
