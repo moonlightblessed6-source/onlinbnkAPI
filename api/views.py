@@ -1,16 +1,19 @@
 import random
-
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.utils.timezone import now
+from django.utils.crypto import get_random_string
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import *
@@ -18,48 +21,45 @@ from .serializers import *
 
 
 
-# class AccountAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request):
-#         try:
-#             user = request.user
-#             account = Account.objects.get(user=user)
-
-#             account_data = {
-#                 "username": user.username,
-#                 "first_name": account.first_name,  
-#                 "last_name": account.last_name,   
-#                 "email": account.email,
-#                 "phone": account.phone,
-#                 "nationality": account.nationality,
-#                 "gender": account.gender,
-#                 "street": account.street,
-#                 "apt_suite": account.apt_suite,
-#                 "city": account.city,
-#                 "state": account.state,
-#                 "zip_code": account.zip_code,
-#                 "balance": account.balance,
-#                 "account_number": account.account_number,
-#                 "avatar_url": account.avatar.url if account.avatar else None,
-#                 "date_created": account.date_created.strftime('%Y-%m-%d %H:%M:%S'),
-#             }
-
-#             current_time = now().isoformat()
-
-#             return Response({
-#                 "message": "Dashboard loaded successfully",
-#                 "account": account_data,
-#                 "current_time": current_time,
-#             }, status=status.HTTP_200_OK)
-
-#         except Account.DoesNotExist:
-#             return Response({"error": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
-#         except Exception as e:
-#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-from django.db import transaction
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username_or_email = request.data.get("username")
+        verification_code = request.data.get("verification_code")  # Code entered by the user
+
+        if not username_or_email:
+            return Response({"error": "Username or email required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_obj = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
+        if not user_obj:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not hasattr(user_obj, 'verification_code') or user_obj.is_code_expired():
+            code = get_random_string(length=6, allowed_chars='1234567890')
+            user_obj.verification_code = code
+            user_obj.verification_code_expired = timezone.now() + timedelta(minutes=10)  # Expires in 10 minutes
+            user_obj.save()
+
+            send_mail(
+                'Your Login Verification Code',
+                f'Your verification code is: {code}',
+                settings.DEFAULT_FROM_EMAIL,
+                [user_obj.email],
+                fail_silently=False,
+            )
+            return Response({"message": "Verification code sent to your email. Please check your inbox."}, status=status.HTTP_200_OK)
+
+        if verification_code != user_obj.verification_code:
+            return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "Verification successful. You can now log in."}, status=status.HTTP_200_OK)
+
+
+
 
 class AccountAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -104,36 +104,36 @@ class AccountAPIView(APIView):
 
 
 
-class LoginView(APIView):
-    permission_classes = [AllowAny]
+# class LoginView(APIView):
+#     permission_classes = [AllowAny]
 
-    def post(self, request):
-        # Make sure request.data is used correctly
-        username_or_email = request.data.get("username")
-        password = request.data.get("password")
+#     def post(self, request):
+#         # Make sure request.data is used correctly
+#         username_or_email = request.data.get("username")
+#         password = request.data.get("password")
 
-        if not username_or_email or not password:
-            return Response({"error": "Username/email and password required"}, status=status.HTTP_400_BAD_REQUEST)
+#         if not username_or_email or not password:
+#             return Response({"error": "Username/email and password required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Find user by username or email
-        user_obj = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
-        if not user_obj:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+#         # Find user by username or email
+#         user_obj = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
+#         if not user_obj:
+#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Authenticate user
-        user = authenticate(username=user_obj.username, password=password)
-        if not user:
-            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+#         # Authenticate user
+#         user = authenticate(username=user_obj.username, password=password)
+#         if not user:
+#             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Generate JWT
-        refresh = RefreshToken.for_user(user)
+#         # Generate JWT
+#         refresh = RefreshToken.for_user(user)
 
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "user_id": user.id,
-            "username": user.username
-        }, status=status.HTTP_200_OK)
+#         return Response({
+#             "access": str(refresh.access_token),
+#             "refresh": str(refresh),
+#             "user_id": user.id,
+#             "username": user.username
+#         }, status=status.HTTP_200_OK)
 
 
 
@@ -196,6 +196,43 @@ class TransferAPIView(APIView):
 
 
 
+# class TransferVerifyAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     @transaction.atomic
+#     def post(self, request, transfer_id):
+#         try:
+#             transfer = Transfer.objects.select_for_update().get(pk=transfer_id)
+#         except Transfer.DoesNotExist:
+#             return Response({'detail': 'Transfer not found.'}, status=404)
+
+#         if transfer.sender != request.user:
+#             return Response({'detail': 'Unauthorized.'}, status=403)
+
+#         if transfer.is_verified:
+#             return Response({'detail': 'Transfer already verified.'}, status=400)
+
+#         code = request.data.get('verification_code')
+#         if code != transfer.verification_code:
+#             return Response({'detail': 'Invalid verification code.'}, status=400)
+
+#         if request.user.account.balance < transfer.amount:
+#             transfer.status = 'F'
+#             transfer.code_entered = True
+#             transfer.save(update_fields=['status', 'code_entered'])
+#             return Response({'detail': 'Insufficient balance.'}, status=400)
+
+#         transfer.is_verified = True
+#         transfer.code_entered = True
+#         transfer.status = 'P'
+#         transfer.save(update_fields=['is_verified', 'status', 'code_entered'])
+
+#         return Response(
+#             {'detail': 'Transfer verified. Awaiting admin approval.'},
+#             status=200
+#         )
+
+
 class TransferVerifyAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -213,10 +250,10 @@ class TransferVerifyAPIView(APIView):
             return Response({'detail': 'Transfer already verified.'}, status=400)
 
         code = request.data.get('verification_code')
-        if code != transfer.verification_code:
+        if not code or code != transfer.verification_code:
             return Response({'detail': 'Invalid verification code.'}, status=400)
 
-        if request.user.account.balance < transfer.amount:
+        if transfer.sender.account.balance < transfer.amount:
             transfer.status = 'F'
             transfer.code_entered = True
             transfer.save(update_fields=['status', 'code_entered'])
@@ -231,7 +268,6 @@ class TransferVerifyAPIView(APIView):
             {'detail': 'Transfer verified. Awaiting admin approval.'},
             status=200
         )
-
 
 
 

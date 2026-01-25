@@ -35,6 +35,8 @@ class CustomUser(AbstractUser):
     is_locked = models.BooleanField(default=False)
     is_transfer_locked = models.BooleanField(default=False) 
     email = models.EmailField(unique=True)
+    verification_code = models.CharField(max_length=6, blank=True, null=True)
+    verification_code_expired = models.BooleanField(default=False)
 
     def get_transaction_history(self):
         deposits = self.deposits.all().annotate(
