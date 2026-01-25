@@ -27,29 +27,10 @@ ALLOWED_HOSTS = [
 ]
 
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173',
-    "https://onlinbnkapi.onrender.com",
-    "https://onlinprojectbnk.vercel.app",
-    "https://www.onlinprojectbnk.vercel.app",
-]
-
-
-
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://onlinprojectbnk.vercel.app",
-    "https://www.onlinprojectbnk.vercel.app",
-]
-
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
-
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -57,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework_simplejwt',
-    "corsheaders",
     'rest_framework',
     'api.apps.ApiConfig',
 ]
@@ -65,7 +45,7 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware", 
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -73,6 +53,24 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+
+# CORS setup
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",                    
+    "https://onlinprojectbnk.vercel.app",      
+    "https://www.onlinprojectbnk.vercel.app",   
+]
+
+CORS_ALLOW_CREDENTIALS = True 
+
+# CSRF trusted origins (HTTPS only)
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173", 
+    "https://onlinbnkapi.onrender.com",
+    "https://onlinprojectbnk.vercel.app",
+    "https://www.onlinprojectbnk.vercel.app",
 ]
 
 
