@@ -23,6 +23,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'onlinbnkapi.onrender.com',
+    'www.onlinbnkapi.onrender.com',
 ]
 
 
@@ -30,6 +31,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     "https://onlinbnkapi.onrender.com",
     "https://onlinprojectbnk.vercel.app",
+    "https://www.onlinprojectbnk.vercel.app",
 ]
 
 
@@ -39,6 +41,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://onlinprojectbnk.vercel.app",
+    "https://www.onlinprojectbnk.vercel.app",
 ]
 
 
