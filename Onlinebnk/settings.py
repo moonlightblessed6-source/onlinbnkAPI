@@ -48,6 +48,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -163,10 +164,9 @@ AUTHENTICATION_BACKENDS = [
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.hostinger.com'  
-# EMAIL_PORT = 465                    
-EMAIL_PORT = 587                    
-EMAIL_USE_TLS = True                
-EMAIL_USE_SSL = False                
+EMAIL_PORT = 465                    
+EMAIL_USE_TLS = False                
+EMAIL_USE_SSL = True                
 EMAIL_HOST_USER = 'support@eloanhub.com'
 EMAIL_HOST_PASSWORD = '#Pp@EWtD8'
 DEFAULT_FROM_EMAIL = 'support@eloanhub.com'

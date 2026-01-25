@@ -104,27 +104,33 @@ class DepositSerializer(serializers.ModelSerializer):
 
 
 
-
-
 class TransactionHistorySerializer(serializers.Serializer):
     transaction_type = serializers.CharField()
     amount = serializers.DecimalField(max_digits=20, decimal_places=2)
     timestamp = serializers.DateTimeField()
     description = serializers.CharField()
-
     reference = serializers.CharField(required=False, allow_null=True)
     purpose = serializers.CharField(required=False, allow_null=True)
     recipient_address = serializers.CharField(required=False, allow_null=True)
 
     receiver_name = serializers.SerializerMethodField()
     receiver_account = serializers.SerializerMethodField()
-    receiver_bank = serializers.SerializerMethodField()  
+    receiver_bank = serializers.SerializerMethodField()
 
     def get_receiver_name(self, obj):
+        """
+        Return the counterparty name:
+        - Transfer: receiver_name or receiver user
+        - Deposit: bank_name
+        """
+        # Transfers
         if getattr(obj, "receiver_name", None):
             return obj.receiver_name
         if getattr(obj, "receiver", None):
             return f"{obj.receiver.first_name} {obj.receiver.last_name}"
+        # Deposits
+        if getattr(obj, "bank_name", None):
+            return obj.bank_name
         return None
 
     def get_receiver_account(self, obj):
@@ -135,5 +141,46 @@ class TransactionHistorySerializer(serializers.Serializer):
         return None
 
     def get_receiver_bank(self, obj):
-        # Always return the saved bank name (even if pending)
-        return getattr(obj, "receiver_bank", None) or "External Bank"
+        """
+        Return the bank for frontend display:
+        - Transfer: receiver_bank
+        - Deposit: bank_name
+        """
+        if getattr(obj, "receiver_bank", None):
+            return obj.receiver_bank
+        if getattr(obj, "bank_name", None):
+            return obj.bank_name
+        return "External Bank"
+
+
+# class TransactionHistorySerializer(serializers.Serializer):
+#     transaction_type = serializers.CharField()
+#     amount = serializers.DecimalField(max_digits=20, decimal_places=2)
+#     timestamp = serializers.DateTimeField()
+#     description = serializers.CharField()
+
+#     reference = serializers.CharField(required=False, allow_null=True)
+#     purpose = serializers.CharField(required=False, allow_null=True)
+#     recipient_address = serializers.CharField(required=False, allow_null=True)
+
+#     receiver_name = serializers.SerializerMethodField()
+#     receiver_account = serializers.SerializerMethodField()
+#     receiver_bank = serializers.SerializerMethodField()  
+
+#     def get_receiver_name(self, obj):
+#         if getattr(obj, "receiver_name", None):
+#             return obj.receiver_name
+#         if getattr(obj, "receiver", None):
+#             return f"{obj.receiver.first_name} {obj.receiver.last_name}"
+#         return None
+
+#     def get_receiver_account(self, obj):
+#         if getattr(obj, "receiver_account", None):
+#             return obj.receiver_account
+#         if getattr(obj, "receiver", None) and hasattr(obj.receiver, "account"):
+#             return obj.receiver.account.account_number
+#         return None
+
+#     def get_receiver_bank(self, obj):
+#         # Always return the saved bank name (even if pending)
+#         return getattr(obj, "receiver_bank", None) or "External Bank"

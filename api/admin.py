@@ -45,13 +45,6 @@ class AccountAdmin(admin.ModelAdmin):
     search_fields = ('first_name', 'last_name', 'phone', 'user__username')
 
 
-# @admin.register(Transfer)
-# class TransferAdmin(admin.ModelAdmin):
-#     list_display = ('sender', 'receiver', 'amount', 'recipient_address', 'status', 'timestamp')
-#     list_filter = ('status', 'timestamp')
-#     search_fields = ('sender__username', 'receiver__username')
-
-
 
 @admin.register(Transfer)
 class TransferAdmin(admin.ModelAdmin):
@@ -71,31 +64,19 @@ class TransferAdmin(admin.ModelAdmin):
     @transaction.atomic
     def approve_transfers(self, request, queryset):
         approved = 0
-
         for transfer in queryset.select_for_update():
-            # Must be verified and pending
             if transfer.status != 'P' or not transfer.is_verified:
                 continue
 
-            sender_account = transfer.sender.account
+            # Already deducted at creation
+            transfer.status = 'S'
 
-            # Final balance check
-            if sender_account.balance < transfer.amount:
-                transfer.status = 'F'
-                transfer.save(update_fields=['status'])
-                continue
-
-            # Debit sender
-            sender_account.balance -= transfer.amount
-            sender_account.save()
-
-            # Credit receiver (internal only)
+            # Credit internal receiver if exists
             if transfer.receiver:
                 receiver_account = transfer.receiver.account
                 receiver_account.balance += transfer.amount
                 receiver_account.save()
 
-            transfer.status = 'S'
             transfer.save(update_fields=['status'])
             approved += 1
 
@@ -106,11 +87,23 @@ class TransferAdmin(admin.ModelAdmin):
 
     approve_transfers.short_description = "✅ Approve selected transfers"
 
+    @transaction.atomic
     def decline_transfers(self, request, queryset):
-        declined = queryset.filter(status='P').update(status='F')
+        declined = 0
+        for transfer in queryset.filter(status='P'):
+            sender_account = transfer.sender.account
+
+            # Refund the amount
+            sender_account.balance += transfer.amount
+            sender_account.save()
+
+            transfer.status = 'F'
+            transfer.save(update_fields=['status'])
+            declined += 1
+
         self.message_user(
             request,
-            f"{declined} transfer(s) declined."
+            f"{declined} transfer(s) declined and refunded."
         )
 
     decline_transfers.short_description = "❌ Decline selected transfers"

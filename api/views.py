@@ -24,12 +24,75 @@ from .serializers import *
 
 
 
+# class LoginView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request):
+#         username_or_email = request.data.get("username")
+#         verification_code = request.data.get("verification_code")
+
+#         if not username_or_email:
+#             return Response({"error": "Username or email required"}, status=400)
+
+#         user = User.objects.filter(
+#             Q(username=username_or_email) | Q(email=username_or_email)
+#         ).first()
+
+#         if not user:
+#             return Response({"error": "User not found"}, status=404)
+
+#         # STEP 1: Send code
+#         if not verification_code:
+#             code = get_random_string(6, allowed_chars="0123456789")
+#             user.verification_code = code
+#             user.verification_code_sent_at = timezone.now()
+#             user.verification_code_expired = False
+#             user.save()
+
+#             send_mail(
+#                 "Your Login Verification Code",
+#                 f"Your verification code is: {code}",
+#                 settings.DEFAULT_FROM_EMAIL,
+#                 [user.email],
+#                 fail_silently=False,
+#             )
+
+#             return Response({
+#                 "step": "verify",
+#                 "message": "Verification code sent"
+#             }, status=200)
+
+#         # STEP 2: Verify code
+#         if user.verification_code != verification_code:
+#             return Response({"error": "Invalid verification code"}, status=400)
+
+#         if not user.verification_code_sent_at or (
+#             timezone.now() > user.verification_code_sent_at + timedelta(minutes=5)
+#         ):
+#             return Response({"error": "Verification code expired"}, status=400)
+
+#         # STEP 3: Login success
+#         refresh = RefreshToken.for_user(user)
+
+#         user.verification_code = None
+#         user.verification_code_sent_at = None
+#         user.verification_code_expired = False
+#         user.save()
+
+#         return Response({
+#             "step": "done",
+#             "access": str(refresh.access_token),
+#             "refresh": str(refresh),
+#         }, status=200)
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         username_or_email = request.data.get("username")
         verification_code = request.data.get("verification_code")
+        resend = request.data.get("resend", False)  # NEW: flag to resend code
 
         if not username_or_email:
             return Response({"error": "Username or email required"}, status=400)
@@ -41,7 +104,29 @@ class LoginView(APIView):
         if not user:
             return Response({"error": "User not found"}, status=404)
 
-        # STEP 1: Send code
+        # STEP 1: Resend code if requested
+        if resend:
+            if not user.verification_code_sent_at or (
+                timezone.now() > user.verification_code_sent_at + timedelta(minutes=1)
+            ):
+                code = get_random_string(6, allowed_chars="0123456789")
+                user.verification_code = code
+                user.verification_code_sent_at = timezone.now()
+                user.verification_code_expired = False
+                user.save()
+
+                send_mail(
+                    "Your Login Verification Code",
+                    f"Your verification code is: {code}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+                return Response({"detail": "Verification code resent."}, status=200)
+            else:
+                return Response({"detail": "You can request a new code after 1 minute."}, status=429)
+
+        # STEP 2: Send code if not provided
         if not verification_code:
             code = get_random_string(6, allowed_chars="0123456789")
             user.verification_code = code
@@ -62,7 +147,7 @@ class LoginView(APIView):
                 "message": "Verification code sent"
             }, status=200)
 
-        # STEP 2: Verify code
+        # STEP 3: Verify code (same as before)
         if user.verification_code != verification_code:
             return Response({"error": "Invalid verification code"}, status=400)
 
@@ -71,7 +156,7 @@ class LoginView(APIView):
         ):
             return Response({"error": "Verification code expired"}, status=400)
 
-        # STEP 3: Login success
+        # Login success
         refresh = RefreshToken.for_user(user)
 
         user.verification_code = None
@@ -129,40 +214,6 @@ class AccountAPIView(APIView):
 
 
 
-# class LoginView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         # Make sure request.data is used correctly
-#         username_or_email = request.data.get("username")
-#         password = request.data.get("password")
-
-#         if not username_or_email or not password:
-#             return Response({"error": "Username/email and password required"}, status=status.HTTP_400_BAD_REQUEST)
-
-#         # Find user by username or email
-#         user_obj = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
-#         if not user_obj:
-#             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         # Authenticate user
-#         user = authenticate(username=user_obj.username, password=password)
-#         if not user:
-#             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-
-#         # Generate JWT
-#         refresh = RefreshToken.for_user(user)
-
-#         return Response({
-#             "access": str(refresh.access_token),
-#             "refresh": str(refresh),
-#             "user_id": user.id,
-#             "username": user.username
-#         }, status=status.HTTP_200_OK)
-
-
-
-
      
 
 class TransferAPIView(APIView):
@@ -177,85 +228,48 @@ class TransferAPIView(APIView):
                 'detail': 'Your account is currently restricted from sending money. Please contact support.'
             }, status=status.HTTP_403_FORBIDDEN)
 
-        try:
-            serializer = TransferSerializer(data=request.data, context={'request': request})
-            
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-            amount = serializer.validated_data['amount']
-            sender_account = user.account
+        serializer = TransferSerializer(data=request.data, context={'request': request})
 
-            if sender_account.balance < amount:
-                return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            code = str(random.randint(100000, 999999))
+        amount = serializer.validated_data['amount']
+        sender_account = user.account
 
-            transfer = serializer.save(
-                sender=user,
-                verification_code=code,
-                status='P',
-                is_verified=False,
-                receiver_name=serializer.validated_data.get('receiver_name'),
-                receiver_account=serializer.validated_data.get('receiver_account'),
-                receiver_bank=serializer.validated_data.get('receiver_bank'),
-                )
+        if sender_account.balance < amount:
+            return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Deduct immediately
+        sender_account.balance -= amount
+        sender_account.save()
 
-            send_mail(
-                subject='Your Transfer Verification Code',
-                message=f'Your verification code is: {code}',
-                from_email='support@eloanhub.com',
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
+        # Generate verification code
+        code = str(random.randint(100000, 999999))
 
-            return Response({
-                'detail': 'Transfer created. Verification code sent.',
-                'transfer_id': transfer.id
-            }, status=status.HTTP_201_CREATED)
+        # Create transfer with pending status
+        transfer = serializer.save(
+            sender=user,
+            verification_code=code,
+            status='P',
+            is_verified=False,
+            receiver_name=serializer.validated_data.get('receiver_name'),
+            receiver_account=serializer.validated_data.get('receiver_account'),
+            receiver_bank=serializer.validated_data.get('receiver_bank'),
+        )
 
-        except Exception as e:
-            return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Send verification code
+        send_mail(
+            subject='Your Transfer Verification Code',
+            message=f'Your verification code is: {code}',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
 
-
-
-
-# class TransferVerifyAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     @transaction.atomic
-#     def post(self, request, transfer_id):
-#         try:
-#             transfer = Transfer.objects.select_for_update().get(pk=transfer_id)
-#         except Transfer.DoesNotExist:
-#             return Response({'detail': 'Transfer not found.'}, status=404)
-
-#         if transfer.sender != request.user:
-#             return Response({'detail': 'Unauthorized.'}, status=403)
-
-#         if transfer.is_verified:
-#             return Response({'detail': 'Transfer already verified.'}, status=400)
-
-#         code = request.data.get('verification_code')
-#         if code != transfer.verification_code:
-#             return Response({'detail': 'Invalid verification code.'}, status=400)
-
-#         if request.user.account.balance < transfer.amount:
-#             transfer.status = 'F'
-#             transfer.code_entered = True
-#             transfer.save(update_fields=['status', 'code_entered'])
-#             return Response({'detail': 'Insufficient balance.'}, status=400)
-
-#         transfer.is_verified = True
-#         transfer.code_entered = True
-#         transfer.status = 'P'
-#         transfer.save(update_fields=['is_verified', 'status', 'code_entered'])
-
-#         return Response(
-#             {'detail': 'Transfer verified. Awaiting admin approval.'},
-#             status=200
-#         )
+        return Response({
+            'detail': 'Transfer created. Verification code sent.',
+            'transfer_id': transfer.id
+        }, status=status.HTTP_201_CREATED)
 
 
 class TransferVerifyAPIView(APIView):
@@ -278,16 +292,9 @@ class TransferVerifyAPIView(APIView):
         if not code or code != transfer.verification_code:
             return Response({'detail': 'Invalid verification code.'}, status=400)
 
-        if transfer.sender.account.balance < transfer.amount:
-            transfer.status = 'F'
-            transfer.code_entered = True
-            transfer.save(update_fields=['status', 'code_entered'])
-            return Response({'detail': 'Insufficient balance.'}, status=400)
-
         transfer.is_verified = True
         transfer.code_entered = True
-        transfer.status = 'P'
-        transfer.save(update_fields=['is_verified', 'status', 'code_entered'])
+        transfer.save(update_fields=['is_verified', 'code_entered'])
 
         return Response(
             {'detail': 'Transfer verified. Awaiting admin approval.'},
