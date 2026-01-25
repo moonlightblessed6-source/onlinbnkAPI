@@ -165,11 +165,11 @@ AUTHENTICATION_BACKENDS = [
 
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'smtp.hostinger.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'adilagubban@gmail.com'
-EMAIL_HOST_PASSWORD = 'ihlvvgejqgskbfpn'
+EMAIL_HOST_USER = 'support@eloanhub.com'
+EMAIL_HOST_PASSWORD = '#Pp@EWtD8'
 
 # Debug logging for email backend
 

@@ -180,7 +180,7 @@ class TransferAPIView(APIView):
             send_mail(
                 subject='Your Transfer Verification Code',
                 message=f'Your verification code is: {code}',
-                from_email='adilagubban@gmail.com',
+                from_email='support@eloanhub.com',
                 recipient_list=[user.email],
                 fail_silently=False,
             )
