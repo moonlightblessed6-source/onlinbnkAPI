@@ -1,18 +1,19 @@
 import random
+from datetime import timedelta
+from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
-from django.utils.timezone import now
-from django.utils.crypto import get_random_string
-from django.conf import settings
-from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import timedelta
-
+from django.utils.crypto import get_random_string
+from django.utils.timezone import now
+import random
+from rest_framework import status
+import random
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -23,92 +24,6 @@ from .serializers import *
 
 
 
-
-
-
-class LoginView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        username_or_email = request.data.get("username")
-        verification_code = request.data.get("verification_code")
-        resend = request.data.get("resend", False)  # NEW: flag to resend code
-
-        if not username_or_email:
-            return Response({"error": "Username or email required"}, status=400)
-
-        user = User.objects.filter(
-            Q(username=username_or_email) | Q(email=username_or_email)
-        ).first()
-
-        if not user:
-            return Response({"error": "User not found"}, status=404)
-
-        # STEP 1: Resend code if requested
-        if resend:
-            if not user.verification_code_sent_at or (
-                timezone.now() > user.verification_code_sent_at + timedelta(minutes=1)
-            ):
-                code = get_random_string(6, allowed_chars="0123456789")
-                user.verification_code = code
-                user.verification_code_sent_at = timezone.now()
-                user.verification_code_expired = False
-                user.save()
-
-                send_mail(
-                    "Your Login Verification Code",
-                    f"Your verification code is: {code}",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                    fail_silently=False,
-                )
-                return Response({"detail": "Verification code resent."}, status=200)
-            else:
-                return Response({"detail": "You can request a new code after 1 minute."}, status=429)
-
-        # STEP 2: Send code if not provided
-        if not verification_code:
-            code = get_random_string(6, allowed_chars="0123456789")
-            user.verification_code = code
-            user.verification_code_sent_at = timezone.now()
-            user.verification_code_expired = False
-            user.save()
-
-            send_mail(
-                "Your Login Verification Code",
-                f"Your verification code is: {code}",
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-
-            return Response({
-                "step": "verify",
-                "message": "Verification code sent"
-            }, status=200)
-
-        # STEP 3: Verify code (same as before)
-        if user.verification_code != verification_code:
-            return Response({"error": "Invalid verification code"}, status=400)
-
-        if not user.verification_code_sent_at or (
-            timezone.now() > user.verification_code_sent_at + timedelta(minutes=5)
-        ):
-            return Response({"error": "Verification code expired"}, status=400)
-
-        # Login success
-        refresh = RefreshToken.for_user(user)
-
-        user.verification_code = None
-        user.verification_code_sent_at = None
-        user.verification_code_expired = False
-        user.save()
-
-        return Response({
-            "step": "done",
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        }, status=200)
 
 
 class AccountAPIView(APIView):
@@ -154,92 +69,329 @@ class AccountAPIView(APIView):
 
 
 
-     
+
+
+
+
+
+
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username_or_email = request.data.get("username")
+        verification_code = request.data.get("verification_code")
+        resend = request.data.get("resend", False)  # flag to resend code
+
+        if not username_or_email:
+            return Response({"error": "Username or email required"}, status=400)
+
+        # Lookup user by username or email
+        user = CustomUser.objects.filter(
+            Q(username=username_or_email) | Q(email=username_or_email)
+        ).first()
+
+        if not user:
+            return Response({"error": "User not found"}, status=404)
+
+        # STEP 1: Resend code if requested
+        if resend:
+            if not user.verification_code_sent_at or (
+                timezone.now() > user.verification_code_sent_at + timedelta(minutes=1)
+            ):
+                code = get_random_string(6, allowed_chars="0123456789")
+                user.verification_code = code
+                user.verification_code_sent_at = timezone.now()
+                user.save(update_fields=["verification_code", "verification_code_sent_at"])
+
+                send_mail(
+                    "Your Login Verification Code",
+                    f"Your verification code is: {code}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+                return Response({"detail": "Verification code resent."}, status=200)
+            else:
+                return Response(
+                    {"detail": "You can request a new code after 1 minute."},
+                    status=429,
+                )
+
+        # STEP 2: Send code if not provided
+        if not verification_code:
+            code = get_random_string(6, allowed_chars="0123456789")
+            user.verification_code = code
+            user.verification_code_sent_at = timezone.now()
+            user.save(update_fields=["verification_code", "verification_code_sent_at"])
+
+            send_mail(
+                "Your Login Verification Code",
+                f"Your verification code is: {code}",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+
+            return Response(
+                {
+                    "step": "verify",
+                    "message": "Verification code sent",
+                },
+                status=200,
+            )
+
+        # STEP 3: Verify code
+        if user.is_code_expired():
+            return Response({"error": "Verification code expired"}, status=400)
+
+        if user.verification_code != verification_code:
+            return Response({"error": "Invalid verification code"}, status=400)
+
+        # Login success
+        refresh = RefreshToken.for_user(user)
+        user.clear_verification_code()  # clears code and timestamp
+
+        return Response(
+            {
+                "step": "done",
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            },
+            status=200,
+        )
+
+
+
+
+
+
+
+def generate_6_digit_code():
+    return f"{random.randint(100000, 999999)}"
 
 class TransferAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    CODE_ORDER = ["tax", "activation", "imf"]  # Sequence of codes
+
+    def get_next_code(self, security, settings_obj, device_id):
+        """Return the next required code for this device according to CODE_ORDER."""
+        if not settings_obj.enable_transaction_code:
+            return None
+        for code in self.CODE_ORDER:
+            if getattr(settings_obj, f"enable_{code}_code", False):
+                if not security.is_code_verified(code, device_id):
+                    return code
+        return None
 
     def post(self, request):
         user = request.user
+        device_id = request.headers.get("Device-ID")
+        if not device_id:
+            return Response({"detail": "Device-ID header required"}, status=400)
 
-        # Check if transfer is locked
-        if user.is_transfer_locked:
-            return Response({
-                'detail': 'Your account is currently restricted from sending money. Please contact support.'
-            }, status=status.HTTP_403_FORBIDDEN)
+        account = user.account
+        security = account.security
+        settings_obj = account.transaction_settings
 
-        serializer = TransferSerializer(data=request.data, context={'request': request})
+        if not settings_obj:
+            return Response({"detail": "Transaction settings not configured"}, status=500)
 
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # ------------------ MULTI-CODE FLOW ------------------
+        if settings_obj.enable_transaction_code:
+            while True:
+                next_code = self.get_next_code(security, settings_obj, device_id)
 
-        amount = serializer.validated_data['amount']
-        sender_account = user.account
+                if not next_code:
+                    # All codes verified → clear and proceed with transfer
+                    security.clear_codes()
+                    break  # exit while loop to execute transfer
 
-        if sender_account.balance < amount:
-            return Response({'detail': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
+                code_value = request.data.get(f"{next_code}_code")
 
-        # Deduct immediately
-        sender_account.balance -= amount
-        sender_account.save()
+                if not code_value:
+                    # Send code to user
+                    code_generated = security.generate_code(next_code)
+                    send_mail(
+                        subject=f"Your {next_code.capitalize()} Code",
+                        message=f"Your {next_code} code is: {code_generated}",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False
+                    )
+                    return Response({"code_type": next_code}, status=200)
 
-        # Generate verification code
-        code = str(random.randint(100000, 999999))
+                # Validate code
+                if code_value != getattr(security, f"{next_code}_code"):
+                    return Response({"detail": f"Invalid {next_code} code"}, status=400)
 
-        # Create transfer with pending status
-        transfer = serializer.save(
-            sender=user,
-            verification_code=code,
-            status='P',
-            is_verified=False,
-            receiver_name=serializer.validated_data.get('receiver_name'),
-            receiver_account=serializer.validated_data.get('receiver_account'),
-            receiver_bank=serializer.validated_data.get('receiver_bank'),
-        )
+                # Mark as verified for this device
+                security.mark_code_verified(next_code, device_id)
 
-        # Send verification code
-        send_mail(
-            subject='Your Transfer Verification Code',
-            message=f'Your verification code is: {code}',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+                # Check for next step
+                next_code_after = self.get_next_code(security, settings_obj, device_id)
+                if next_code_after:
+                    # Frontend shows next code input
+                    return Response({"code_type": next_code_after}, status=200)
+                # Otherwise, loop continues → all codes verified → transfer executes
 
-        return Response({
-            'detail': 'Transfer created. Verification code sent.',
-            'transfer_id': transfer.id
-        }, status=status.HTTP_201_CREATED)
+        # ------------------ EMAIL OTP FLOW (unchanged) ------------------
+        else:
+            resend = request.data.get("resend")
+            email_otp = request.data.get("email_otp")
 
+            if resend or not email_otp:
+                user.verification_code = generate_6_digit_code()
+                user.verification_code_sent_at = timezone.now()
+                user.save(update_fields=["verification_code", "verification_code_sent_at"])
 
-class TransferVerifyAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+                send_mail(
+                    subject="Your One-Time Transfer Code",
+                    message=f"Your email OTP for transfer is: {user.verification_code}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False
+                )
+                return Response({"code_type": "email_otp"}, status=200)
 
-    @transaction.atomic
-    def post(self, request, transfer_id):
-        try:
-            transfer = Transfer.objects.select_for_update().get(pk=transfer_id)
-        except Transfer.DoesNotExist:
-            return Response({'detail': 'Transfer not found.'}, status=404)
+            if email_otp != user.verification_code:
+                return Response({"detail": "Invalid email OTP"}, status=400)
 
-        if transfer.sender != request.user:
-            return Response({'detail': 'Unauthorized.'}, status=403)
+            if user.is_code_expired():
+                return Response({"detail": "OTP expired"}, status=400)
 
-        if transfer.is_verified:
-            return Response({'detail': 'Transfer already verified.'}, status=400)
+            user.clear_verification_code()
 
-        code = request.data.get('verification_code')
-        if not code or code != transfer.verification_code:
-            return Response({'detail': 'Invalid verification code.'}, status=400)
+        # ------------------ EXECUTE TRANSFER ------------------
+        serializer = TransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        amount = serializer.validated_data["amount"]
 
-        transfer.is_verified = True
-        transfer.code_entered = True
-        transfer.save(update_fields=['is_verified', 'code_entered'])
+        if account.balance < amount:
+            return Response({"detail": "Insufficient balance"}, status=400)
+
+        account.balance -= amount
+        account.save()
+        transfer = serializer.save(sender=user)
 
         return Response(
-            {'detail': 'Transfer verified. Awaiting admin approval.'},
-            status=200
+            {"detail": "Transfer successful", "reference": transfer.reference},
+            status=201
         )
+
+
+
+
+# class TransferAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     CODE_ORDER = ["tax", "activation", "imf"]  # Sequence of codes
+
+#     def get_next_code(self, security, settings_obj, device_id):
+#         """Return the next required code for this device according to CODE_ORDER."""
+#         if not settings_obj.enable_transaction_code:
+#             return None
+#         for code in self.CODE_ORDER:
+#             if getattr(settings_obj, f"enable_{code}_code", False):
+#                 if not security.is_code_verified(code, device_id):
+#                     return code
+#         return None
+
+#     def post(self, request):
+#         user = request.user
+#         device_id = request.headers.get("Device-ID")
+#         if not device_id:
+#             return Response({"detail": "Device-ID header required"}, status=400)
+
+#         account = user.account
+#         security = account.security
+#         settings_obj = account.transaction_settings
+
+#         if not settings_obj:
+#             return Response({"detail": "Transaction settings not configured"}, status=500)
+
+#         # ------------------ MULTI-CODE FLOW ------------------
+#         if settings_obj.enable_transaction_code:
+#             next_code = self.get_next_code(security, settings_obj, device_id)
+
+#             # Step through codes sequentially
+#             if next_code:
+#                 code_value = request.data.get(f"{next_code}_code")
+
+#                 # No code provided → generate and send
+#                 if not code_value:
+#                     code_generated = security.generate_code(next_code)
+#                     send_mail(
+#                         subject=f"Your {next_code.capitalize()} Code",
+#                         message=f"Your {next_code} code is: {code_generated}",
+#                         from_email=settings.DEFAULT_FROM_EMAIL,
+#                         recipient_list=[user.email],
+#                         fail_silently=False
+#                     )
+#                     return Response({"code_type": next_code}, status=200)
+
+#                 # Validate code
+#                 if code_value != getattr(security, f"{next_code}_code"):
+#                     return Response({"detail": f"Invalid {next_code} code"}, status=400)
+
+#                 # Mark as verified for this device
+#                 security.mark_code_verified(next_code, device_id)
+
+#                 # Determine next required code
+#                 next_code = self.get_next_code(security, settings_obj, device_id)
+#                 if next_code:
+#                     # Prompt frontend for next code
+#                     return Response({"code_type": next_code}, status=200)
+#                 else:
+#                     # All codes verified → clear codes and proceed with transfer
+#                     security.clear_codes_if_all_verified(settings_obj, device_id)
+
+#         # ------------------ EMAIL OTP FLOW (leave unchanged) ------------------
+#         else:
+#             resend = request.data.get("resend")
+#             email_otp = request.data.get("email_otp")
+
+#             if resend or not email_otp:
+#                 user.verification_code = generate_6_digit_code()
+#                 user.verification_code_sent_at = timezone.now()
+#                 user.save(update_fields=["verification_code", "verification_code_sent_at"])
+
+#                 send_mail(
+#                     subject="Your One-Time Transfer Code",
+#                     message=f"Your email OTP for transfer is: {user.verification_code}",
+#                     from_email=settings.DEFAULT_FROM_EMAIL,
+#                     recipient_list=[user.email],
+#                     fail_silently=False
+#                 )
+#                 return Response({"code_type": "email_otp"}, status=200)
+
+#             if email_otp != user.verification_code:
+#                 return Response({"detail": "Invalid email OTP"}, status=400)
+
+#             if user.is_code_expired():
+#                 return Response({"detail": "OTP expired"}, status=400)
+
+#             user.clear_verification_code()
+
+#         # ------------------ EXECUTE TRANSFER ------------------
+#         serializer = TransferSerializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         amount = serializer.validated_data["amount"]
+
+#         if account.balance < amount:
+#             return Response({"detail": "Insufficient balance"}, status=400)
+
+#         account.balance -= amount
+#         account.save()
+#         transfer = serializer.save(sender=user)
+
+#         return Response(
+#             {"detail": "Transfer successful", "reference": transfer.reference},
+#             status=201
+#         )
+
+
 
 
 
@@ -258,11 +410,14 @@ class TransactionHistoryView(APIView):
 
 
 
-# api/views.py
-from django.http import JsonResponse
 
-def keep_alive(request):
-    """
-    Simple endpoint to respond to pings from React
-    """
-    return JsonResponse({"status": "alive"}, status=200)
+
+
+# api/views.py
+# from django.http import JsonResponse
+
+# def keep_alive(request):
+#     """
+#     Simple endpoint to respond to pings from React
+#     """
+#     return JsonResponse({"status": "alive"}, status=200)
