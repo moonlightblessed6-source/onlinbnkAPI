@@ -20,12 +20,31 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "device-id",  # ✅ add your custom header
 ]
 
+CORS_EXPOSE_HEADERS = ["Content-Type", "Authorization"]
 
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "onlinbnkapi.onrender.com",
     "onlinprojectbnk.vercel.app",
+]
+
+
+# CORS setup
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "https://onlinprojectbnk.vercel.app",
+    "https://www.onlinprojectbnk.vercel.app",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF trusted origins (HTTPS only)
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "https://onlinbnkapi.onrender.com",
+    "https://onlinprojectbnk.vercel.app",
+    "https://www.onlinprojectbnk.vercel.app",
 ]
 
 
@@ -58,22 +77,6 @@ MIDDLEWARE = [
 ]
 
 
-# CORS setup
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "https://onlinprojectbnk.vercel.app",
-    "https://www.onlinprojectbnk.vercel.app",
-]
-
-CORS_ALLOW_CREDENTIALS = True
-
-# CSRF trusted origins (HTTPS only)
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "https://onlinbnkapi.onrender.com",
-    "https://onlinprojectbnk.vercel.app",
-    "https://www.onlinprojectbnk.vercel.app",
-]
 
 
 ROOT_URLCONF = "Onlinebnk.urls"
@@ -161,8 +164,8 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = "smtp.hostinger.com"
 EMAIL_PORT = 465
 EMAIL_USE_TLS = False

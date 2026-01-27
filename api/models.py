@@ -287,3 +287,40 @@ class Deposit(models.Model):
             acc = self.user.account
             acc.balance += self.amount
             acc.save()
+
+
+
+
+
+
+
+
+
+
+# accounts/models.py
+
+
+class Register(models.Model):
+    ACCOUNT_TYPES = [
+        ("Savings", "Savings"),
+        ("Current", "Current"),
+        ("Business", "Business"),
+        ("Investment", "Investment"),
+    ]
+
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    middle_name = models.CharField(max_length=100, blank=True, null=True)
+    username = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=50)
+    country = models.CharField(max_length=100)
+    currency = models.CharField(max_length=10)
+    account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPES)
+    pin = models.CharField(max_length=10)
+    password = models.CharField(max_length=128)
+    agreed_terms = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.username})"

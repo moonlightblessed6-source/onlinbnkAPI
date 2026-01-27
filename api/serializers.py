@@ -96,43 +96,6 @@ class DepositSerializer(serializers.ModelSerializer):
 
 
 # ===================== TRANSACTION HISTORY =====================
-# class TransactionHistorySerializer(serializers.Serializer):
-#     transaction_type = serializers.CharField()
-#     amount = serializers.DecimalField(max_digits=20, decimal_places=2)
-#     timestamp = serializers.DateTimeField()
-#     description = serializers.CharField()
-#     reference = serializers.CharField(required=False, allow_null=True)
-#     purpose = serializers.CharField(required=False, allow_null=True)
-#     recipient_address = serializers.CharField(required=False, allow_null=True)
-
-#     receiver_name = serializers.SerializerMethodField()
-#     receiver_account = serializers.SerializerMethodField()
-#     receiver_bank = serializers.SerializerMethodField()
-
-#     def get_receiver_name(self, obj):
-#         if getattr(obj, "receiver_name", None):
-#             return obj.receiver_name
-#         if getattr(obj, "receiver", None):
-#             return f"{obj.receiver.first_name} {obj.receiver.last_name}"
-#         if getattr(obj, "bank_name", None):
-#             return obj.bank_name
-#         return None
-
-#     def get_receiver_account(self, obj):
-#         if getattr(obj, "receiver_account", None):
-#             return obj.receiver_account
-#         if getattr(obj, "receiver", None) and hasattr(obj.receiver, "account"):
-#             return obj.receiver.account.account_number
-#         return None
-
-#     def get_receiver_bank(self, obj):
-#         if getattr(obj, "receiver_bank", None):
-#             return obj.receiver_bank
-#         if getattr(obj, "bank_name", None):
-#             return obj.bank_name
-#         return "External Bank"
-
-
 class TransactionHistorySerializer(serializers.Serializer):
     transaction_type = serializers.CharField()
     amount = serializers.DecimalField(max_digits=20, decimal_places=2)
@@ -147,33 +110,35 @@ class TransactionHistorySerializer(serializers.Serializer):
     receiver_bank = serializers.SerializerMethodField()
 
     def get_receiver_name(self, obj):
-        # If the transaction is a transfer, get the receiver's name
-        if hasattr(obj, "receiver_name") and obj.receiver_name:
+        if getattr(obj, "receiver_name", None):
             return obj.receiver_name
-        # If the transaction is a transfer and receiver object exists
-        elif hasattr(obj, "receiver") and obj.receiver:
+        if getattr(obj, "receiver", None):
             return f"{obj.receiver.first_name} {obj.receiver.last_name}"
-        # Fallback for deposit transactions with bank name
-        elif hasattr(obj, "bank_name") and obj.bank_name:
+        if getattr(obj, "bank_name", None):
             return obj.bank_name
         return None
 
     def get_receiver_account(self, obj):
-        # If the transaction is a transfer, get the receiver's account number
-        if hasattr(obj, "receiver_account") and obj.receiver_account:
+        if getattr(obj, "receiver_account", None):
             return obj.receiver_account
-        # If the transaction is a transfer and receiver has an account object
-        elif hasattr(obj, "receiver") and hasattr(obj.receiver, "account"):
+        if getattr(obj, "receiver", None) and hasattr(obj.receiver, "account"):
             return obj.receiver.account.account_number
-        # For deposits, no receiver account, so return None
         return None
 
     def get_receiver_bank(self, obj):
-        # If the transaction is a transfer, get the receiver's bank name
-        if hasattr(obj, "receiver_bank") and obj.receiver_bank:
+        if getattr(obj, "receiver_bank", None):
             return obj.receiver_bank
-        # If the transaction is a transfer and receiver has a bank name
-        elif hasattr(obj, "bank_name") and obj.bank_name:
+        if getattr(obj, "bank_name", None):
             return obj.bank_name
-        # If no bank info, fallback to "External Bank" for unknown types
         return "External Bank"
+
+
+
+
+
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Register
+        fields = "__all__"  # save all fields from the model

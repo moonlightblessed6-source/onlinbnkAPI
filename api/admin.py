@@ -9,8 +9,11 @@ from .models import (
     Deposit,
     TransactionSettings,
     AccountSecurity,
+    Register,
 )
 
+
+admin.site.register(Register)
 
 # ===================== USERS =====================
 @admin.register(CustomUser)
@@ -119,15 +122,6 @@ class TransferAdmin(admin.ModelAdmin):
             transfer.save()
 
 
-# ===================== SECURITY SETTINGS =====================
-# @admin.register(TransactionSettings)
-# class TransactionSettingsAdmin(admin.ModelAdmin):
-#     list_display = (
-#         "enable_activation_code",
-#         "enable_tax_code",
-#         "enable_imf_code",
-#         "updated_at",
-#     )
 
 
 @admin.register(TransactionSettings)

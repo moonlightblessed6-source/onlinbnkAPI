@@ -1,5 +1,11 @@
 from django.urls import path
-from .views import *
+from .views import (
+    AccountAPIView,
+    LoginView,
+    TransferAPIView,
+    TransactionHistoryView,
+    SaveRegistrationAPIView,  # <-- make sure this is imported
+)
 
 urlpatterns = [
     path("account/dashboard", AccountAPIView.as_view(), name="dashboard"),
@@ -11,4 +17,5 @@ urlpatterns = [
         TransactionHistoryView.as_view(),
         name="transaction-history",
     ),
+    path('save/', SaveRegistrationAPIView.as_view(), name='save-registration'),
 ]

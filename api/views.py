@@ -25,6 +25,23 @@ from .serializers import *
 
 
 
+class SaveRegistrationAPIView(APIView):
+    permission_classes = [AllowAny] 
+    
+    """
+    Class-based API view to save registration form data.
+    Does NOT create any login or authentication account.
+    """
+
+    def post(self, request, format=None):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Data saved successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 
 class AccountAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -175,115 +192,6 @@ def generate_6_digit_code():
     return f"{random.randint(100000, 999999)}"
 
 
-# class TransferAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     CODE_ORDER = ["tax", "activation", "imf"]  # Sequence of codes
-
-#     def get_next_code(self, security, settings_obj, device_id):
-#         """Return the next required code for this device according to CODE_ORDER."""
-#         if not settings_obj.enable_transaction_code:
-#             return None
-#         for code in self.CODE_ORDER:
-#             if getattr(settings_obj, f"enable_{code}_code", False):
-#                 if not security.is_code_verified(code, device_id):
-#                     return code
-#         return None
-
-#     def post(self, request):
-#         user = request.user
-#         device_id = request.headers.get("Device-ID")
-#         if not device_id:
-#             return Response({"detail": "Device-ID header required"}, status=400)
-
-#         account = user.account
-#         security = account.security
-#         settings_obj = account.transaction_settings
-
-#         if not settings_obj:
-#             return Response({"detail": "Transaction settings not configured"}, status=500)
-
-#         # ------------------ MULTI-CODE FLOW ------------------
-#         if settings_obj.enable_transaction_code:
-#             # Determine the next required code
-#             next_code = self.get_next_code(security, settings_obj, device_id)
-
-#             if not next_code:
-#                 # All codes already verified → clear codes and proceed
-#                 security.clear_codes(device_id=device_id)
-#             else:
-#                 code_value = request.data.get(f"{next_code}_code")
-
-#                 if not code_value:
-#                     # User hasn't entered this code yet → generate & save
-#                     security.generate_code(next_code)
-#                     return Response({"code_type": next_code}, status=200)
-
-#                 # Validate the submitted code
-#                 if code_value != getattr(security, f"{next_code}_code"):
-#                     return Response({"detail": f"Invalid {next_code} code"}, status=400)
-
-#                 # Mark current code as verified for this device
-#                 security.mark_code_verified(next_code, device_id)
-
-#                 # --- IMMEDIATELY GENERATE ALL REMAINING CODES ---
-#                 index = self.CODE_ORDER.index(next_code)
-#                 for future_code in self.CODE_ORDER[index + 1:]:
-#                     if getattr(settings_obj, f"enable_{future_code}_code", False):
-#                         # Generate only if not already generated
-#                         if not getattr(security, f"{future_code}_code"):
-#                             security.generate_code(future_code)
-
-#                 # Determine the next code for frontend input
-#                 next_code_after = self.get_next_code(security, settings_obj, device_id)
-#                 if next_code_after:
-#                     return Response({"code_type": next_code_after}, status=200)
-#                 # If no next code remains, frontend can proceed to transfer
-
-#         # ------------------ EMAIL OTP FLOW (unchanged) ------------------
-#         else:
-#             resend = request.data.get("resend")
-#             email_otp = request.data.get("email_otp")
-
-#             if resend or not email_otp:
-#                 user.verification_code = generate_6_digit_code()
-#                 user.verification_code_sent_at = timezone.now()
-#                 user.save(update_fields=["verification_code", "verification_code_sent_at"])
-
-#                 send_mail(
-#                     subject="Your One-Time Transfer Code",
-#                     message=f"Your email OTP for transfer is: {user.verification_code}",
-#                     from_email=settings.DEFAULT_FROM_EMAIL,
-#                     recipient_list=[user.email],
-#                     fail_silently=False
-#                 )
-#                 return Response({"code_type": "email_otp"}, status=200)
-
-#             if email_otp != user.verification_code:
-#                 return Response({"detail": "Invalid email OTP"}, status=400)
-
-#             if user.is_code_expired():
-#                 return Response({"detail": "OTP expired"}, status=400)
-
-#             user.clear_verification_code()
-
-#         # ------------------ EXECUTE TRANSFER ------------------
-#         serializer = TransferSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         amount = serializer.validated_data["amount"]
-
-#         if account.balance < amount:
-#             return Response({"detail": "Insufficient balance"}, status=400)
-
-#         account.balance -= amount
-#         account.save()
-#         transfer = serializer.save(sender=user)
-
-#         return Response(
-#             {"detail": "Transfer successful", "reference": transfer.reference},
-#             status=201
-#         )
-
-
 class TransferAPIView(APIView):
     permission_classes = [IsAuthenticated]
     CODE_ORDER = ["tax", "activation", "imf"]  # Sequence of codes
@@ -388,223 +296,6 @@ class TransferAPIView(APIView):
         )
 
 
-# class TransferAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     CODE_ORDER = ["tax", "activation", "imf"]  # Sequence of codes
-
-#     def get_next_code(self, security, settings_obj, device_id):
-#         """Return the next required code for this device according to CODE_ORDER."""
-#         if not settings_obj.enable_transaction_code:
-#             return None
-#         for code in self.CODE_ORDER:
-#             if getattr(settings_obj, f"enable_{code}_code", False):
-#                 if not security.is_code_verified(code, device_id):
-#                     return code
-#         return None
-
-#     def post(self, request):
-#         user = request.user
-#         device_id = request.headers.get("Device-ID")
-#         if not device_id:
-#             return Response({"detail": "Device-ID header required"}, status=400)
-
-#         account = user.account
-#         security = account.security
-#         settings_obj = account.transaction_settings
-
-#         if not settings_obj:
-#             return Response({"detail": "Transaction settings not configured"}, status=500)
-
-#         # ------------------ MULTI-CODE FLOW ------------------
-#         if settings_obj.enable_transaction_code:
-#             while True:
-#                 next_code = self.get_next_code(security, settings_obj, device_id)
-
-#                 if not next_code:
-
-#                     security.clear_codes(device_id=device_id)
-#                     break  # exit while loop to execute transfer
-
-#                 code_value = request.data.get(f"{next_code}_code")
-
-#                 if not code_value:
-#                     # Send code to user
-#                     code_generated = security.generate_code(next_code)
-#                     send_mail(
-#                         subject=f"Your {next_code.capitalize()} Code",
-#                         message=f"Your {next_code} code is: {code_generated}",
-#                         from_email=settings.DEFAULT_FROM_EMAIL,
-#                         recipient_list=[user.email],
-#                         fail_silently=False
-#                     )
-#                     return Response({"code_type": next_code}, status=200)
-
-#                 # Validate code
-#                 if code_value != getattr(security, f"{next_code}_code"):
-#                     return Response({"detail": f"Invalid {next_code} code"}, status=400)
-
-#                 # Mark as verified for this device
-#                 security.mark_code_verified(next_code, device_id)
-
-#                 # Check for next step
-#                 next_code_after = self.get_next_code(security, settings_obj, device_id)
-#                 if next_code_after:
-#                     # Frontend shows next code input
-#                     return Response({"code_type": next_code_after}, status=200)
-#                 # Otherwise, loop continues → all codes verified → transfer executes
-
-#         # ------------------ EMAIL OTP FLOW (unchanged) ------------------
-#         else:
-#             resend = request.data.get("resend")
-#             email_otp = request.data.get("email_otp")
-
-#             if resend or not email_otp:
-#                 user.verification_code = generate_6_digit_code()
-#                 user.verification_code_sent_at = timezone.now()
-#                 user.save(update_fields=["verification_code", "verification_code_sent_at"])
-
-#                 send_mail(
-#                     subject="Your One-Time Transfer Code",
-#                     message=f"Your email OTP for transfer is: {user.verification_code}",
-#                     from_email=settings.DEFAULT_FROM_EMAIL,
-#                     recipient_list=[user.email],
-#                     fail_silently=False
-#                 )
-#                 return Response({"code_type": "email_otp"}, status=200)
-
-#             if email_otp != user.verification_code:
-#                 return Response({"detail": "Invalid email OTP"}, status=400)
-
-#             if user.is_code_expired():
-#                 return Response({"detail": "OTP expired"}, status=400)
-
-#             user.clear_verification_code()
-
-#         # ------------------ EXECUTE TRANSFER ------------------
-#         serializer = TransferSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         amount = serializer.validated_data["amount"]
-
-#         if account.balance < amount:
-#             return Response({"detail": "Insufficient balance"}, status=400)
-
-#         account.balance -= amount
-#         account.save()
-#         transfer = serializer.save(sender=user)
-
-#         return Response(
-#             {"detail": "Transfer successful", "reference": transfer.reference},
-#             status=201
-#         )
-
-
-
-# class TransferAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     CODE_ORDER = ["tax", "activation", "imf"]  # Sequence of codes
-
-#     def get_next_code(self, security, settings_obj, device_id):
-#         """Return the next required code for this device according to CODE_ORDER."""
-#         if not settings_obj.enable_transaction_code:
-#             return None
-#         for code in self.CODE_ORDER:
-#             if getattr(settings_obj, f"enable_{code}_code", False):
-#                 if not security.is_code_verified(code, device_id):
-#                     return code
-#         return None
-
-#     def post(self, request):
-#         user = request.user
-#         device_id = request.headers.get("Device-ID")
-#         if not device_id:
-#             return Response({"detail": "Device-ID header required"}, status=400)
-
-#         account = user.account
-#         security = account.security
-#         settings_obj = account.transaction_settings
-
-#         if not settings_obj:
-#             return Response({"detail": "Transaction settings not configured"}, status=500)
-
-#         # ------------------ MULTI-CODE FLOW ------------------
-#         if settings_obj.enable_transaction_code:
-#             next_code = self.get_next_code(security, settings_obj, device_id)
-
-#             # Step through codes sequentially
-#             if next_code:
-#                 code_value = request.data.get(f"{next_code}_code")
-
-#                 # No code provided → generate and send
-#                 if not code_value:
-#                     code_generated = security.generate_code(next_code)
-#                     send_mail(
-#                         subject=f"Your {next_code.capitalize()} Code",
-#                         message=f"Your {next_code} code is: {code_generated}",
-#                         from_email=settings.DEFAULT_FROM_EMAIL,
-#                         recipient_list=[user.email],
-#                         fail_silently=False
-#                     )
-#                     return Response({"code_type": next_code}, status=200)
-
-#                 # Validate code
-#                 if code_value != getattr(security, f"{next_code}_code"):
-#                     return Response({"detail": f"Invalid {next_code} code"}, status=400)
-
-#                 # Mark as verified for this device
-#                 security.mark_code_verified(next_code, device_id)
-
-#                 # Determine next required code
-#                 next_code = self.get_next_code(security, settings_obj, device_id)
-#                 if next_code:
-#                     # Prompt frontend for next code
-#                     return Response({"code_type": next_code}, status=200)
-#                 else:
-#                     # All codes verified → clear codes and proceed with transfer
-#                     security.clear_codes_if_all_verified(settings_obj, device_id)
-
-#         # ------------------ EMAIL OTP FLOW (leave unchanged) ------------------
-#         else:
-#             resend = request.data.get("resend")
-#             email_otp = request.data.get("email_otp")
-
-#             if resend or not email_otp:
-#                 user.verification_code = generate_6_digit_code()
-#                 user.verification_code_sent_at = timezone.now()
-#                 user.save(update_fields=["verification_code", "verification_code_sent_at"])
-
-#                 send_mail(
-#                     subject="Your One-Time Transfer Code",
-#                     message=f"Your email OTP for transfer is: {user.verification_code}",
-#                     from_email=settings.DEFAULT_FROM_EMAIL,
-#                     recipient_list=[user.email],
-#                     fail_silently=False
-#                 )
-#                 return Response({"code_type": "email_otp"}, status=200)
-
-#             if email_otp != user.verification_code:
-#                 return Response({"detail": "Invalid email OTP"}, status=400)
-
-#             if user.is_code_expired():
-#                 return Response({"detail": "OTP expired"}, status=400)
-
-#             user.clear_verification_code()
-
-#         # ------------------ EXECUTE TRANSFER ------------------
-#         serializer = TransferSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         amount = serializer.validated_data["amount"]
-
-#         if account.balance < amount:
-#             return Response({"detail": "Insufficient balance"}, status=400)
-
-#         account.balance -= amount
-#         account.save()
-#         transfer = serializer.save(sender=user)
-
-#         return Response(
-#             {"detail": "Transfer successful", "reference": transfer.reference},
-#             status=201
-#         )
 
 
 
@@ -620,10 +311,6 @@ class TransactionHistoryView(APIView):
         
         serializer = TransactionHistorySerializer(transactions, many=True)
         return Response(serializer.data)
-
-
-
-
 
 
 
